@@ -31,7 +31,7 @@ class WeightedLossModel(nn.Module):
 
 def load_large_dataset(file_path: str) -> Dataset:
     """Loads dataset efficiently using streaming for large files."""
-    return load_dataset('json', data_files=file_path, split='train', streaming=True)
+    return load_dataset('json', data_files=file_path, split='train', streaming=False)  # TODO ENABLE STREAMING
 
 
 def remove_span_tags(text):
@@ -57,15 +57,16 @@ def transform_to_bio(annotated):
 
 def tokenize_and_align_labels_batch(examples, tokenizer, label_map):
     """Processes raw text, extracts BIO tags, tokenizes, and aligns labels in batch."""
-    raw_texts = [remove_span_tags(entry) for entry in examples["annotated"]]
-    bio_tags = [transform_to_bio(entry) for entry in examples["annotated"]]
+    raw_texts = [remove_span_tags(entry) for entry in examples["text"]]
+    bio_tags = [transform_to_bio(entry) for entry in examples["text"]]
 
     tokenized_inputs = tokenizer(
         raw_texts,
         truncation=True,
         padding="max_length",
         max_length=256,
-        is_split_into_words=False
+        is_split_into_words=False,
+        return_tensors="pt"
     )
 
     labels = []
@@ -122,7 +123,7 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset):
         evaluation_strategy="steps",
         eval_steps=50,
         save_steps=100,
-        save_total_limit=2
+        save_total_limit=2,
     )
 
     trainer = Trainer(
@@ -143,8 +144,8 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    train_dataset = load_large_dataset('data/train_data.json')
-    val_dataset = load_large_dataset('data/eval_data.json')
+    train_dataset = load_large_dataset('data/toy_train.json') # todo replace it with data
+    val_dataset = load_large_dataset('data/toy_eval.json')
 
     model_name = "bert-base-uncased"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -165,7 +166,7 @@ if __name__ == '__main__':
     model = torch.compile(model)  # Compile model for better performance
 
     # Dataloader with multiprocessing
-    train_dataloader = DataLoader(train_dataset, batch_size=32, num_workers=4)
+    train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=4)
     val_dataloader = DataLoader(val_dataset, batch_size=32, num_workers=4)
 
     logs = train_model(train_dataset, val_dataset)
