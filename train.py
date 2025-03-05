@@ -116,7 +116,7 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
         logging_steps=50,
         weight_decay=0.3,
         logging_dir='./logs',
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         eval_steps=50,
         save_steps=100,
         save_total_limit=2,
