@@ -119,9 +119,8 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
         logging_steps=50,
         weight_decay=0.3,
         logging_dir='./logs',
-        eval_strategy="steps",
-        eval_steps=50,
-        save_steps=100,
+        eval_strategy="epoch",
+        save_steps=1000,
         save_total_limit=2,
         remove_unused_columns=False  # Ensures dataset columns are not ignored
     )
