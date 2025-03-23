@@ -1,10 +1,7 @@
-from collections import defaultdict
-
 import torch
 import torch.nn as nn
 import logging
 from datasets import load_dataset, Dataset
-from tqdm import tqdm
 from transformers import (
     AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 )
@@ -12,6 +9,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from typing import List
 import re
+from collections import Counter
 
 label_map = {'O': 0, 'B-EMPH': 1, 'I-EMPH': 2}
 
@@ -84,8 +82,15 @@ def tokenize_and_align_labels_batch(examples, tokenizer, label_map):
     }
 
 def calc_distribution(train_dataset: Dataset) -> List[float]:
-    """TODO - make this count only once because its slow"""
-    return [1/3, 1/3, 1/3]
+    """Calculates the distribution of BIO tags in the dataset."""
+    tag_counter = Counter()
+
+    for example in train_dataset:
+        labels = example["labels"]
+        tag_counter.update(labels)
+
+    total_tags = sum(tag_counter.values())
+    return [tag_counter[tag] / total_tags for tag in sorted(tag_counter)]
 
 def plot_loss_logs(logs):
     """Plots training and evaluation loss."""
@@ -120,7 +125,7 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
         weight_decay=0.3,
         logging_dir='./logs',
         eval_strategy="epoch",
-        save_steps=1000,
+        save_steps=10000,
         save_total_limit=2,
         remove_unused_columns=False  # Ensures dataset columns are not ignored
     )
@@ -144,8 +149,8 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    train_dataset = load_large_dataset('data/train_data.json')
-    val_dataset = load_large_dataset('data/eval_data.json')
+    train_dataset = load_large_dataset('data/split_files/part_1.json')
+    val_dataset = load_large_dataset('data/toy_eval.json')
 
     model_name = "bert-base-uncased"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -165,14 +170,16 @@ if __name__ == '__main__':
 
     logger.info("Calculating class weights...")
     class_weights = [1 / share for share in calc_distribution(train_dataset)]
+
+    print('Class weights', zip(label_map.keys(), class_weights))
     model = WeightedLossModel(base_model, class_weights)
 
     # Define the data collator
     data_collator = DataCollatorForTokenClassification(tokenizer)
 
     # Use DataLoader with multiprocessing
-    train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=4)
-    val_dataloader = DataLoader(val_dataset, batch_size=1, num_workers=4)
+    train_dataloader = DataLoader(train_dataset, batch_size=16, num_workers=2)
+    val_dataloader = DataLoader(val_dataset, batch_size=16, num_workers=2)
 
     # Train the model with data collator
     logs = train_model(train_dataset, val_dataset, data_collator)
