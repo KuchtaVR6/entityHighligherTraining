@@ -171,7 +171,10 @@ if __name__ == '__main__':
     logger.info("Calculating class weights...")
     class_weights = [1 / share for share in calc_distribution(train_dataset)]
 
-    print('Class weights', zip(label_map.keys(), class_weights))
+    print('Class weights')
+    for class_name, class_weights in zip(label_map.keys(), class_weights):
+        print(class_name, class_weights)
+
     model = WeightedLossModel(base_model, class_weights)
 
     # Define the data collator
