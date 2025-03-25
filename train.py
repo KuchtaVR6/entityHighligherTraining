@@ -15,7 +15,6 @@ from load_helpers import load_large_dataset, tokenize_and_align_labels_batch
 
 label_map = {'O': 0, 'B-EMPH': 1, 'I-EMPH': 2}
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -57,7 +56,7 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
         eval_strategy="epoch",
         save_steps=10000,
         save_total_limit=2,
-        remove_unused_columns=False  # Ensures dataset columns are not ignored
+        remove_unused_columns=False
     )
 
     trainer = Trainer(
@@ -66,7 +65,7 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         tokenizer=tokenizer,
-        data_collator=data_collator  # Include the data collator
+        data_collator=data_collator
     )
 
     logger.info("Starting training...")
@@ -87,7 +86,7 @@ if __name__ == '__main__':
     train_dataset = train_dataset.map(
         lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map),
         batched=True,
-        remove_columns=["text"]  # Remove original text to prevent shape mismatch
+        remove_columns=["text"]
     )
 
     val_dataset = val_dataset.map(
@@ -99,23 +98,15 @@ if __name__ == '__main__':
     logger.info("Calculating class weights...")
     class_weights = [1 / share for share in calc_distribution(train_dataset)]
 
-    print(label_map.keys())
-    print(class_weights)
-
     model = WeightedLossModel(base_model, class_weights)
-
-    # Define the data collator
     data_collator = DataCollatorForTokenClassification(tokenizer)
 
-    # Use DataLoader with multiprocessing
     train_dataloader = DataLoader(train_dataset, batch_size=16, num_workers=2)
     val_dataloader = DataLoader(val_dataset, batch_size=16, num_workers=2)
 
-    # Train the model with data collator
     logs = train_model(train_dataset, val_dataset, data_collator)
 
     os.makedirs("./results", exist_ok=True)
 
     torch.save(model.state_dict(), "./results/custom_model.pth")
-    # Save tokenizer separately (since it's HF)
     tokenizer.save_pretrained("./results")
