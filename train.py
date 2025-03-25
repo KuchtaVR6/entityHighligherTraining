@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 import logging
@@ -44,7 +46,7 @@ def calc_distribution(train_dataset: Dataset) -> List[float]:
 def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
     """Trains the model using provided datasets."""
     training_args = TrainingArguments(
-        output_dir='./results',
+        output_dir='./checkpoints',
         num_train_epochs=1,
         per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
@@ -69,14 +71,13 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
 
     logger.info("Starting training...")
     trainer.train()
-    trainer.save_model("./results")
     logger.info("Training complete. Model saved.")
 
     return trainer.state.log_history
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    train_dataset = load_large_dataset('data/split_files/part_1.json')
+    train_dataset = load_large_dataset('data/toy_train.json')
     val_dataset = load_large_dataset('data/toy_eval.json')
 
     model_name = "bert-base-uncased"
@@ -112,3 +113,9 @@ if __name__ == '__main__':
 
     # Train the model with data collator
     logs = train_model(train_dataset, val_dataset, data_collator)
+
+    os.makedirs("./results", exist_ok=True)
+
+    torch.save(model.state_dict(), "./results/custom_model.pth")
+    # Save tokenizer separately (since it's HF)
+    tokenizer.save_pretrained("./results")

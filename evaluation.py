@@ -26,11 +26,11 @@ def compute_accuracy(model, val_dataset, label_map):
 
         # Get ground truth labels
         labels = batch["labels"]
+        tensor_labels = torch.tensor(labels).unsqueeze(0)
 
         with torch.no_grad():
             # Run the model to get logits (do not pass labels during inference)
-            outputs = model.base_model(input_ids=input_ids, attention_mask=attention_mask)
-            logits = outputs.logits  # Logits are the second output
+            _, logits = model.base_model(input_ids=input_ids, attention_mask=attention_mask, labels=tensor_labels)
 
             # Get the predicted labels by taking the argmax of the logits
             predictions = torch.argmax(logits, dim=-1).squeeze().tolist()  # Remove batch dimension
@@ -71,11 +71,15 @@ if __name__ == '__main__':
     logger.info("Loading datasets...")
     val_dataset = load_large_dataset('data/toy_eval.json')
 
-    model_name = "bert-base-uncased" # TODO results load
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    base_model = AutoModelForTokenClassification.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained("./results")
+    base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
+    class_weights = torch.tensor([1, 1, 1], dtype=torch.float)  # Example values
 
-    model = WeightedLossModel(base_model, [1, 1, 1]) # TODO REMOVE
+    model = WeightedLossModel(base_model, class_weights)
+
+    model.load_state_dict(torch.load("./results/custom_model.pth"))
+
+    model = WeightedLossModel(model, [1, 1, 1])
 
     val_dataset = val_dataset.map(
         lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map),
