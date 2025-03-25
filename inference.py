@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 
 import torch
 from tqdm import tqdm
@@ -8,30 +7,23 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 from load_helpers import load_large_dataset, tokenize_and_align_labels_batch
 from train import label_map, WeightedLossModel
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def infer(model, infer_dataset, label_map):
-    model.eval()  # Set the model in evaluation mode
+    model.eval()
 
     for batch in tqdm(infer_dataset):
-        # Get the input IDs and attention masks from the batch
-        input_ids = torch.tensor(batch["input_ids"]).unsqueeze(0)  # Add batch dimension
+        input_ids = torch.tensor(batch["input_ids"]).unsqueeze(0)
         attention_mask = torch.tensor(batch["attention_mask"]).unsqueeze(0)
 
-        # Get ground truth labels
         labels = batch["labels"]
         tensor_labels = torch.tensor(labels).unsqueeze(0)
+        zero_tensor = torch.zeros_like(tensor_labels)
 
         with torch.no_grad():
-            # Run the model to get logits (do not pass labels during inference)
-            _, logits = model(input_ids=input_ids, attention_mask=attention_mask, labels=tensor_labels)
-
-            # Get the predicted labels by taking the argmax of the logits
-            predictions = torch.argmax(logits, dim=-1).squeeze().tolist()  # Remove batch dimension
-
-            # Map predictions back to label names
+            _, logits = model(input_ids=input_ids, attention_mask=attention_mask, labels=zero_tensor)
+            predictions = torch.argmax(logits, dim=-1).squeeze().tolist()
             predicted_labels = [key for idx in predictions for key, val in label_map.items() if val == idx]
 
             print(predicted_labels)
