@@ -48,8 +48,8 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
     training_args = TrainingArguments(
         output_dir='./checkpoints',
         num_train_epochs=1,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
+        per_device_train_batch_size=64,
+        per_device_eval_batch_size=64,
         warmup_steps=500,
         logging_steps=50,
         weight_decay=0.3,
@@ -77,7 +77,7 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    train_dataset = load_large_dataset('data/toy_train.json')
+    train_dataset = load_large_dataset('data/split_files/part_1.json')
     val_dataset = load_large_dataset('data/toy_eval.json')
 
     model_name = "bert-base-uncased"
