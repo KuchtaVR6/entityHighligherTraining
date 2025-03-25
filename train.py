@@ -92,34 +92,13 @@ def calc_distribution(train_dataset: Dataset) -> List[float]:
     total_tags = sum(tag_counter.values())
     return [tag_counter[tag] / total_tags for tag in sorted(tag_counter)]
 
-def plot_loss_logs(logs):
-    """Plots training and evaluation loss."""
-    train_loss, eval_loss, steps = [], [], []
-    for log in logs:
-        if "loss" in log:
-            train_loss.append(log["loss"])
-        if "eval_loss" in log:
-            eval_loss.append(log["eval_loss"])
-        if "step" in log:
-            steps.append(log["step"])
-    plt.figure(figsize=(10, 5))
-    plt.plot(steps[:len(train_loss)], train_loss, label='Training Loss')
-    if eval_loss:
-        plt.plot(steps[:len(eval_loss)], eval_loss, label='Evaluation Loss')
-    plt.xlabel('Steps')
-    plt.ylabel('Loss')
-    plt.title('Training and Evaluation Loss')
-    plt.legend()
-    plt.grid()
-    plt.show()
-
 def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
     """Trains the model using provided datasets."""
     training_args = TrainingArguments(
         output_dir='./results',
         num_train_epochs=1,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
+        per_device_train_batch_size=64,
+        per_device_eval_batch_size=64,
         warmup_steps=500,
         logging_steps=50,
         weight_decay=0.3,
@@ -144,7 +123,6 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
     trainer.save_model("./results")
     logger.info("Training complete. Model saved.")
 
-    plot_loss_logs(trainer.state.log_history)
     return trainer.state.log_history
 
 if __name__ == '__main__':
