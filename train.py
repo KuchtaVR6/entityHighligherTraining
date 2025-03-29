@@ -1,5 +1,5 @@
 import os
-
+import gc
 import torch
 import torch.nn as nn
 import logging
@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class WeightedLossModel(nn.Module):
-    def __init__(self, base_model, class_weights, dropout_prob=0.25):
+    def __init__(self, base_model, class_weights, dropout_prob=0.1):
         super().__init__()
         self.base_model = base_model
         self.dropout = nn.Dropout(p=dropout_prob)
@@ -47,8 +47,9 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
     training_args = TrainingArguments(
         output_dir='./checkpoints',
         num_train_epochs=1,
-        per_device_train_batch_size=64,
-        per_device_eval_batch_size=64,
+        per_device_train_batch_size=32,
+        per_device_eval_batch_size=32,
+        gradient_accumulation_steps=2,
         warmup_steps=500,
         logging_steps=50,
         weight_decay=0.3,
@@ -103,7 +104,9 @@ if __name__ == '__main__':
     if os.path.exists("./results/custom_model.pth"):
         logger.info("Stating with an existing model...")
         model.load_state_dict(torch.load("./results/custom_model.pth"))
-        model.to("cuda" if torch.cuda.is_available() else "cpu")  # Move model to GPU if available
+
+    del base_model  # Free base model reference
+    gc.collect()
 
     data_collator = DataCollatorForTokenClassification(tokenizer)
 
