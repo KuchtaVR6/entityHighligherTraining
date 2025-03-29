@@ -53,7 +53,6 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
         warmup_steps=500,
         logging_steps=50,
         weight_decay=1e-3,
-        learning_rate=5e-4,
         logging_dir='./logs',
         eval_strategy="epoch",
         save_steps=10000,
