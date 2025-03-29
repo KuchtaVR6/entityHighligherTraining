@@ -47,9 +47,9 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
     training_args = TrainingArguments(
         output_dir='./checkpoints',
         num_train_epochs=1,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
-        gradient_accumulation_steps=4,
+        per_device_train_batch_size=32,
+        per_device_eval_batch_size=32,
+        gradient_accumulation_steps=2,
         warmup_steps=500,
         logging_steps=50,
         weight_decay=0.3,
