@@ -76,7 +76,7 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    train_dataset = load_large_dataset('data/split_files/part_1.json')
+    train_dataset = load_large_dataset('data/toy_train.json')
     val_dataset = load_large_dataset('data/toy_eval.json')
 
     model_name = "bert-base-uncased"
@@ -100,10 +100,10 @@ if __name__ == '__main__':
 
     model = WeightedLossModel(base_model, class_weights)
 
+    # the if statement doubled the the memory usage help
     if os.path.exists("./results/custom_model.pth"):
         logger.info("Stating with an existing model...")
         model.load_state_dict(torch.load("./results/custom_model.pth"))
-        model.to("cuda" if torch.cuda.is_available() else "cpu")  # Move model to GPU if available
 
     data_collator = DataCollatorForTokenClassification(tokenizer)
 
