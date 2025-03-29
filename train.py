@@ -76,7 +76,7 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    train_dataset = load_large_dataset('data/split_files/part_1.json')
+    train_dataset = load_large_dataset('data/split_files/part_2.json')
     val_dataset = load_large_dataset('data/toy_eval.json')
 
     model_name = "bert-base-uncased"
