@@ -52,7 +52,8 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
         gradient_accumulation_steps=2,
         warmup_steps=500,
         logging_steps=50,
-        weight_decay=0.3,
+        weight_decay=1e-3,
+        learning_rate=5e-4,
         logging_dir='./logs',
         eval_strategy="epoch",
         save_steps=10000,
@@ -77,7 +78,7 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    train_dataset = load_large_dataset('data/split_files/part_2.json')
+    train_dataset = load_large_dataset('data/split_files/part_3.json')
     val_dataset = load_large_dataset('data/toy_eval.json')
 
     model_name = "bert-base-uncased"
