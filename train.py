@@ -1,5 +1,5 @@
 import os
-
+import gc
 import torch
 import torch.nn as nn
 import logging
@@ -104,6 +104,9 @@ if __name__ == '__main__':
     if os.path.exists("./results/custom_model.pth"):
         logger.info("Stating with an existing model...")
         model.load_state_dict(torch.load("./results/custom_model.pth"))
+
+    del base_model  # Free base model reference
+    gc.collect()
 
     data_collator = DataCollatorForTokenClassification(tokenizer)
 
