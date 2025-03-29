@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class WeightedLossModel(nn.Module):
-    def __init__(self, base_model, class_weights, dropout_prob=0.25):
+    def __init__(self, base_model, class_weights, dropout_prob=0.1):
         super().__init__()
         self.base_model = base_model
         self.dropout = nn.Dropout(p=dropout_prob)
