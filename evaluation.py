@@ -56,7 +56,7 @@ def compute_accuracy(model, val_dataset, label_map):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    val_dataset = load_large_dataset('data/toy_eval.json')
+    val_dataset = load_large_dataset('data/eval_data.json')
 
     tokenizer = AutoTokenizer.from_pretrained("./results")
     base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
