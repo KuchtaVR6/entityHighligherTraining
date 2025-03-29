@@ -71,6 +71,6 @@ if __name__ == '__main__':
     )
 
     data_collator = DataCollatorForTokenClassification(tokenizer)
-    val_dataloader = DataLoader(val_dataset, batch_size=16, collate_fn=data_collator)
+    val_dataloader = DataLoader(val_dataset, batch_size=64, collate_fn=data_collator)
 
     print(compute_accuracy(model, val_dataloader, label_map))
