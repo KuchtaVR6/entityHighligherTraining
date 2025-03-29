@@ -48,7 +48,7 @@ requests==2.32.3
 safetensors==0.4.5
 setuptools==75.8.0
 six==1.16.0
-sympy==1.13.3
+sympy
 tokenizers==0.20.1
 torch==2.5.1
 tornado==6.4.2
