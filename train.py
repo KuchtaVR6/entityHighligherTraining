@@ -98,12 +98,14 @@ if __name__ == '__main__':
     logger.info("Calculating class weights...")
     class_weights = [1 / share for share in calc_distribution(train_dataset)]
 
-    model = WeightedLossModel(base_model, class_weights)
-
-    # the if statement doubled the the memory usage help
     if os.path.exists("./results/custom_model.pth"):
-        logger.info("Stating with an existing model...")
+        logger.info("Starting with an existing model...")
+        base_model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels=3)  # Reload base model
+        model = WeightedLossModel(base_model, class_weights)
         model.load_state_dict(torch.load("./results/custom_model.pth"))
+    else:
+        logger.info("Training from scratch...")
+        model = WeightedLossModel(base_model, class_weights)
 
     data_collator = DataCollatorForTokenClassification(tokenizer)
 
