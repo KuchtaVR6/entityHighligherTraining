@@ -101,7 +101,6 @@ if __name__ == '__main__':
 
     model = WeightedLossModel(base_model, class_weights)
 
-    # the if statement doubled the the memory usage help
     if os.path.exists("./results/custom_model.pth"):
         logger.info("Stating with an existing model...")
         model.load_state_dict(torch.load("./results/custom_model.pth"))
