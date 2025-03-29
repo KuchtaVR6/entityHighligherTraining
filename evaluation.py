@@ -41,8 +41,6 @@ def compute_accuracy(model, val_dataset, label_map):
                     correct_counts[label_id] += 1
                 total_counts[label_id] += 1
 
-        break
-
     per_class_accuracy = {
         id_to_label[class_id]: correct_counts[class_id] / total_counts[class_id]
         for class_id in total_counts if total_counts[class_id] > 0
@@ -50,7 +48,7 @@ def compute_accuracy(model, val_dataset, label_map):
 
     total_correct = sum(correct_counts.values())
     total_samples = sum(total_counts.values())
-    overall_accuracy = total_correct / total_samples
+    overall_accuracy = total_correct / total_samples if total_samples > 0 else 0.0
 
     per_class_accuracy["overall_accuracy"] = overall_accuracy
 
