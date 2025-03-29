@@ -99,6 +99,12 @@ if __name__ == '__main__':
     class_weights = [1 / share for share in calc_distribution(train_dataset)]
 
     model = WeightedLossModel(base_model, class_weights)
+
+    if os.path.exists("./results/custom_model.pth"):
+        logger.info("Stating with an existing model...")
+        model.load_state_dict(torch.load("./results/custom_model.pth"))
+        model.to("cuda" if torch.cuda.is_available() else "cpu")  # Move model to GPU if available
+
     data_collator = DataCollatorForTokenClassification(tokenizer)
 
     train_dataloader = DataLoader(train_dataset, batch_size=16, num_workers=2)
