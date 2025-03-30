@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCol
 
 from src.inference.compute_logits import compute_logits
 from src.load_helpers import load_large_dataset, tokenize_and_align_labels_batch
-from train import label_map, WeightedLossModel
+from src.train.train import label_map, WeightedLossModel
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

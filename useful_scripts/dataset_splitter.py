@@ -32,7 +32,7 @@ def split_json(input_file, output_folder, num_parts=6):
 
 
 # Example usage
-input_file = 'data/train_data.json'  # The path to your large JSON file
+input_file = '../data/train_data.json'  # The path to your large JSON file
 output_folder = 'data/split_files'  # The folder to store the split files
 
 split_json(input_file, output_folder)

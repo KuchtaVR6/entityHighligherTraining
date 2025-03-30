@@ -1,12 +1,11 @@
 import logging
 
 import torch
-from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCollatorForTokenClassification
+from transformers import AutoTokenizer, AutoModelForTokenClassification
 
 from src.load_helpers import load_large_dataset, tokenize_text
-from train import label_map, WeightedLossModel
+from src.train.train import label_map, WeightedLossModel
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
