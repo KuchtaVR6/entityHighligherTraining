@@ -1,14 +1,27 @@
 import logging
 
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForTokenClassification
+from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCollatorForTokenClassification
 
-from load_helpers import load_large_dataset, tokenize_and_align_labels_batch
+from src.load_helpers import load_large_dataset, tokenize_text
 from train import label_map, WeightedLossModel
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+def detokenize(tokens):
+    """Convert tokenized output back to readable text."""
+    words = []
+    for token in tokens:
+        if token == "[CLS]" or token == "[SEP]" or token == "[PAD]":
+            continue  # Ignore special tokens
+        if token.startswith("##"):
+            words[-1] += token[2:]  # Merge subword tokens
+        else:
+            words.append(token)
+    return " ".join(words)
 
 def infer(model, infer_dataset, label_map):
     model.eval()
@@ -20,6 +33,8 @@ def infer(model, infer_dataset, label_map):
         labels = batch["labels"]
         tensor_labels = torch.tensor(labels).unsqueeze(0)
         zero_tensor = torch.zeros_like(tensor_labels)
+
+        tokens = tokenizer.convert_ids_to_tokens(input_ids.squeeze().tolist())
 
         # Use the original text from the dataset if available
         original_text = batch["text"] if "text" in batch else None
@@ -68,18 +83,18 @@ def infer(model, infer_dataset, label_map):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    val_dataset = load_large_dataset('infer/input.json')
+    val_dataset = load_large_dataset('../../infer/toy_train.json')
 
-    tokenizer = AutoTokenizer.from_pretrained("./results")
+    tokenizer = AutoTokenizer.from_pretrained("../../results")
     base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
     class_weights = torch.tensor([0, 0, 0], dtype=torch.float)
 
     model = WeightedLossModel(base_model, class_weights)
 
-    model.load_state_dict(torch.load("./results/custom_model.pth"))
+    model.load_state_dict(torch.load("../../results/custom_model.pth"))
 
     val_dataset = val_dataset.map(
-        lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map),
+        lambda x: tokenize_text(x, tokenizer, label_map),
         batched=True,
         remove_columns=["text"]
     )

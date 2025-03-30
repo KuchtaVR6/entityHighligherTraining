@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from typing import List
 from collections import Counter
 
-from load_helpers import load_large_dataset, tokenize_and_align_labels_batch
+from src.load_helpers import load_large_dataset, tokenize_and_align_labels_batch
 
 label_map = {'O': 0, 'B-EMPH': 1, 'I-EMPH': 2}
 

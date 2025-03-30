@@ -48,7 +48,7 @@ def tokenize_and_align_labels_batch(examples, tokenizer, label_map):
         "labels": labels  # Ensure labels are properly aligned
     }
 
-def inference_pipeline(texts, tokenizer):
+def tokenize_text(texts, tokenizer):
     """Tokenizes raw texts (no labels, no XML tags) for inference."""
     cleaned_texts = texts
 
