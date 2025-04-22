@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from typing import List
 from collections import Counter
 
-from load_helpers import load_large_dataset, tokenize_and_align_labels_batch
+from src.load_helpers import load_large_dataset, tokenize_and_align_labels_batch
 
 label_map = {'O': 0, 'B-EMPH': 1, 'I-EMPH': 2}
 
@@ -45,7 +45,7 @@ def calc_distribution(train_dataset: Dataset) -> List[float]:
 def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
     """Trains the model using provided datasets."""
     training_args = TrainingArguments(
-        output_dir='./checkpoints',
+        output_dir='../../checkpoints',
         num_train_epochs=1,
         per_device_train_batch_size=32,
         per_device_eval_batch_size=32,
@@ -77,8 +77,8 @@ def train_model(train_dataset: Dataset, val_dataset: Dataset, data_collator):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    train_dataset = load_large_dataset('data/split_files/part_3.json')
-    val_dataset = load_large_dataset('data/toy_eval.json')
+    train_dataset = load_large_dataset('../../data/split_files/part_3.json')
+    val_dataset = load_large_dataset('../../data/toy_eval.json')
 
     model_name = "bert-base-uncased"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -101,9 +101,9 @@ if __name__ == '__main__':
 
     model = WeightedLossModel(base_model, class_weights)
 
-    if os.path.exists("./results/custom_model.pth"):
+    if os.path.exists("../../results/custom_model.pth"):
         logger.info("Stating with an existing model...")
-        model.load_state_dict(torch.load("./results/custom_model.pth"))
+        model.load_state_dict(torch.load("../../results/custom_model.pth"))
 
     del base_model  # Free base model reference
     gc.collect()
@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
     logs = train_model(train_dataset, val_dataset, data_collator)
 
-    os.makedirs("./results", exist_ok=True)
+    os.makedirs("../../results", exist_ok=True)
 
-    torch.save(model.state_dict(), "./results/custom_model.pth")
+    torch.save(model.state_dict(), "../../results/custom_model.pth")
     tokenizer.save_pretrained("./results")

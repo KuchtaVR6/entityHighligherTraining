@@ -48,6 +48,22 @@ def tokenize_and_align_labels_batch(examples, tokenizer, label_map):
         "labels": labels  # Ensure labels are properly aligned
     }
 
+def tokenize_text(texts, tokenizer):
+    """Tokenizes raw texts (no labels, no XML tags) for inference."""
+    cleaned_texts = texts
+
+    # Tokenize without any labels
+    tokenized_inputs = tokenizer(
+        cleaned_texts,
+        truncation=True,
+        padding=True,
+        max_length=256,
+        is_split_into_words=False
+    )
+
+    return tokenized_inputs
+
+
 def load_large_dataset(file_path: str) -> Dataset:
     """Loads dataset efficiently using streaming for large files."""
     return load_dataset('json', data_files=file_path, split='train', streaming=False)
