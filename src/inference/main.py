@@ -1,3 +1,5 @@
+import os
+
 import torch
 import logging
 import json
@@ -14,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    val_dataset = load_large_dataset('data/tiny_train.json')
+    val_dataset = load_large_dataset('data/split_files/part_1.json')
+
+    os.makedirs("logits", exist_ok=True)
 
     tokenizer = AutoTokenizer.from_pretrained("results")
     base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
@@ -35,7 +39,7 @@ if __name__ == '__main__':
     logger.info("Computing logits...")
     results = compute_logits(model, val_dataloader, tokenizer)
 
-    output_path = "results/inference_logits.jsonl"
+    output_path = "logits/inference_logits.jsonl"
     logger.info(f"Saving results to {output_path}")
 
     with open(output_path, 'w') as f:
