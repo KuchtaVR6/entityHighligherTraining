@@ -1,5 +1,6 @@
 import torch
 import logging
+import json
 
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCollatorForTokenClassification
@@ -13,14 +14,13 @@ logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    val_dataset = load_large_dataset('infer/toy_train.json')
+    val_dataset = load_large_dataset('data/tiny_train.json')
 
     tokenizer = AutoTokenizer.from_pretrained("results")
     base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
     class_weights = torch.tensor([0, 0, 0], dtype=torch.float)
 
     model = WeightedLossModel(base_model, class_weights)
-
     model.load_state_dict(torch.load("results/custom_model.pth"))
 
     val_dataset = val_dataset.map(
@@ -32,4 +32,14 @@ if __name__ == '__main__':
     data_collator = DataCollatorForTokenClassification(tokenizer)
     val_dataloader = DataLoader(val_dataset, batch_size=32, collate_fn=data_collator)
 
-    print(compute_logits(model, val_dataloader, tokenizer))
+    logger.info("Computing logits...")
+    results = compute_logits(model, val_dataloader, tokenizer)
+
+    output_path = "results/inference_logits.jsonl"
+    logger.info(f"Saving results to {output_path}")
+
+    with open(output_path, 'w') as f:
+        for item in results:
+            f.write(json.dumps(item) + '\n')
+
+    logger.info("Finished saving logits.")
