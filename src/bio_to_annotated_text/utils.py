@@ -111,7 +111,7 @@ def annotate_word_tokens(word_tokens: List[WordTokens]) -> str:
             annotated_parts.append(word)
     if in_span:
         annotated_parts.append('</span>')
-    return ' '.join(annotated_parts)
+    return ' '.join(annotated_parts).replace(" </span>", "</span>")
 
 def process_records(input_path: str, output_path: str) -> None:
     records = load_and_align(input_path)
