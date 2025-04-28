@@ -4,7 +4,7 @@ from transformers import BertTokenizerFast
 from typing import List, Dict, Tuple
 from .models import TokenRepresentation, WordTokens
 
-LABEL_MAP: Dict[int, str] = {0: 'B', 1: 'I', 2: 'O'}
+LABEL_MAP: Dict[int, str] = {1: 'B', 2: 'I', 0: 'O'}
 
 def load_and_align(jsonl_path: str) -> List[List[WordTokens]]:
     tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
@@ -79,12 +79,8 @@ def annotate_word_tokens(word_tokens: List[WordTokens]) -> str:
                 annotated_parts.append('</span>')
             annotated_parts.append(f'<span>{word}')
             in_span = True
-        elif tag == 'I':
-            if not in_span:
-                annotated_parts.append(f'<span>{word}')
-                in_span = True
-            else:
-                annotated_parts.append(word)
+        elif tag == 'I' and in_span:
+            annotated_parts.append(word)
         else:
             if in_span:
                 annotated_parts.append('</span>')
