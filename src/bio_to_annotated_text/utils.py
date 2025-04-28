@@ -6,18 +6,29 @@ from .models import TokenRepresentation, WordTokens
 
 LABEL_MAP: Dict[int, str] = {1: 'B', 2: 'I', 0: 'O'}
 
-def predict_label(word_token: WordTokens, prev_label: int = 0) -> int:
-    """Predicts the label for a WordTokens object, optionally considering the previous label (for BIO tagging)."""
+def predict_label(word_token: WordTokens, prev_label: int = 0, summative_prediction: bool = False) -> int:
     if not word_token.tokens:
-        return 0  # Default to 'O' if no tokens are present
+        return 0
+
     prod = np.ones_like(word_token.tokens[0].logits)
-    for tr in word_token.tokens:
-        prod *= np.array(tr.logits)
+
+    for idx, tr in enumerate(word_token.tokens):
+        logits = np.array(tr.logits)
+
+        if summative_prediction:
+            if prev_label == 0:
+                if idx == 0:
+                    logits[1] += logits[2]
+
+        if idx != 0:
+            logits[1] = logits[2]  # B on word level will always be BI* on token level
+
+        prod *= logits
+
     pred = int(np.argmax(prod))
 
-    # Enforce: 'I' cannot appear at the beginning (after 'O')
     if pred == 2 and prev_label == 0:
-        pred = 0  # Correct to 'O'
+        pred = 0
 
     return pred
 
