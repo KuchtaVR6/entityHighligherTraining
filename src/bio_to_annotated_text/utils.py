@@ -6,6 +6,21 @@ from .models import TokenRepresentation, WordTokens
 
 LABEL_MAP: Dict[int, str] = {1: 'B', 2: 'I', 0: 'O'}
 
+def predict_label(word_token: WordTokens, prev_label: int = 0) -> int:
+    """Predicts the label for a WordTokens object, optionally considering the previous label (for BIO tagging)."""
+    if not word_token.tokens:
+        return 0  # Default to 'O' if no tokens are present
+    prod = np.ones_like(word_token.tokens[0].logits)
+    for tr in word_token.tokens:
+        prod *= np.array(tr.logits)
+    pred = int(np.argmax(prod))
+
+    # Enforce: 'I' cannot appear at the beginning (after 'O')
+    if pred == 2 and prev_label == 0:
+        pred = 0  # Correct to 'O'
+
+    return pred
+
 def load_and_align(jsonl_path: str) -> List[List[WordTokens]]:
     tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
     all_records: List[List[WordTokens]] = []
@@ -37,10 +52,8 @@ def compute_label_metrics(word_tokens: List[WordTokens]) -> Dict[int, Tuple[int,
     for wt in word_tokens:
         if not wt.tokens:
             continue
-        prod = np.ones_like(wt.tokens[0].logits)
-        for tr in wt.tokens:
-            prod *= np.array(tr.logits)
-        pred, true = int(np.argmax(prod)), wt.tokens[0].label
+        pred = predict_label(wt)
+        true = wt.tokens[0].label
         correct, total = stats.get(true, (0, 0))
         total += 1
         if pred == true:
@@ -53,10 +66,8 @@ def compute_overall_accuracy(word_tokens: List[WordTokens]) -> Tuple[int, int, f
     for wt in word_tokens:
         if not wt.tokens:
             continue
-        prod = np.ones_like(wt.tokens[0].logits)
-        for tr in wt.tokens:
-            prod *= np.array(tr.logits)
-        pred, true = int(np.argmax(prod)), wt.tokens[0].label
+        pred = predict_label(wt)
+        true = wt.tokens[0].label
         if pred == true:
             correct += 1
         total += 1
@@ -65,15 +76,16 @@ def compute_overall_accuracy(word_tokens: List[WordTokens]) -> Tuple[int, int, f
 def annotate_word_tokens(word_tokens: List[WordTokens]) -> str:
     annotated_parts: List[str] = []
     in_span = False
+    prev_label = 0  # Start from 'O'
+
     for wt in word_tokens:
         if not wt.tokens:
             continue
-        prod = np.ones_like(wt.tokens[0].logits)
-        for tr in wt.tokens:
-            prod *= np.array(tr.logits)
-        pred = int(np.argmax(prod))
+        pred = predict_label(wt, prev_label)
+        prev_label = pred  # Update for next word
         tag = LABEL_MAP.get(pred, 'O')
         word = wt.word_str
+
         if tag == 'B':
             if in_span:
                 annotated_parts.append('</span>')
