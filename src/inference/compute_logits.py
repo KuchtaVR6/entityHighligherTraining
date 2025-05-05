@@ -4,16 +4,19 @@ from tqdm import tqdm
 def compute_logits(model, infer_dataset, tokenizer, max_examples=None):
     model.eval()
     results = []
+    device = next(model.parameters()).device  # Get device from model
 
     for i, batch in enumerate(tqdm(infer_dataset)):
         if max_examples is not None and i >= max_examples:
             break
 
-        input_ids = batch["input_ids"]
-        attention_mask = batch["attention_mask"]
-        labels = batch.get("labels", None)  # Optional labels
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        labels = batch.get("labels", None)
+        if labels is not None:
+            labels = labels.to(device)
 
-        zero_tensor = torch.zeros_like(input_ids)
+        zero_tensor = torch.zeros_like(input_ids).to(device)
         tokens = [tokenizer.convert_ids_to_tokens(seq.tolist()) for seq in input_ids]
 
         with torch.no_grad():

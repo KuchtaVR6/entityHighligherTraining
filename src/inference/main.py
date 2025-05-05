@@ -30,6 +30,10 @@ if __name__ == '__main__':
     model = WeightedLossModel(base_model, class_weights)
     model.load_state_dict(torch.load("results/custom_model.pth"))
 
+    # Move model to GPU if available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+
     mapped_data = lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map)
 
     # Map data and remove the text column
