@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCollatorForTokenClassification
 
 from src.inference.compute_logits import compute_logits
-from src.load_helpers import load_large_dataset, tokenize_and_align_labels_batch
+from src.load_helpers import load_large_dataset, tokenize_and_align_labels_batch, remove_span_tags
 from src.train.train import label_map, WeightedLossModel
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,6 +20,9 @@ if __name__ == '__main__':
 
     os.makedirs("logits", exist_ok=True)
 
+    # Save the text column for later use
+    text_column = val_dataset['text']
+
     tokenizer = AutoTokenizer.from_pretrained("results")
     base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
     class_weights = torch.tensor([0, 0, 0], dtype=torch.float)
@@ -27,8 +30,11 @@ if __name__ == '__main__':
     model = WeightedLossModel(base_model, class_weights)
     model.load_state_dict(torch.load("results/custom_model.pth"))
 
+    mapped_data = lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map)
+
+    # Map data and remove the text column
     val_dataset = val_dataset.map(
-        lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map),
+        mapped_data,
         batched=True,
         remove_columns=["text"]
     )
@@ -38,6 +44,9 @@ if __name__ == '__main__':
 
     logger.info("Computing logits...")
     results = compute_logits(model, val_dataloader, tokenizer)
+
+    for i, result in enumerate(results):
+        result['text'] = remove_span_tags(text_column[i])
 
     output_path = "logits/inference_logits.jsonl"
     logger.info(f"Saving results to {output_path}")
