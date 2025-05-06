@@ -3,3 +3,4 @@ data
 results
 infer
 checkpoints
+logits
