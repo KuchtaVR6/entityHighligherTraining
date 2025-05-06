@@ -1,7 +1,7 @@
 import json
-from typing import List, Dict, Tuple, Optional
-
+from typing import List, Dict, Tuple
 import numpy as np
+from tqdm import tqdm
 from transformers import BertTokenizerFast
 
 from .models import TokenRepresentation, WordTokens
@@ -31,72 +31,59 @@ def predict_label(word_token: WordTokens, prev_label: int = 0, summative_predict
 
     return pred
 
-def load_and_align(jsonl_path: str) -> List[List[WordTokens]]:
+def load_tokenizer():
     tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
-    all_records: List[List[WordTokens]] = []
-    special_tokens = set(tokenizer.all_special_tokens)
+    return tokenizer, set(tokenizer.all_special_tokens)
 
-    with open(jsonl_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            data = json.loads(line)
-            raw_tokens, raw_logits, raw_labels = data['tokens'], data['logits'], data['labels']
-            text = data['text']
+def process_line(data: dict, tokenizer, special_tokens) -> List[WordTokens]:
+    raw_tokens, raw_logits, raw_labels = data['tokens'], data['logits'], data['labels']
+    text = data['text']
 
-            filtered = [(t, lg, lb) for t, lg, lb in zip(raw_tokens, raw_logits, raw_labels) if t not in special_tokens]
-            tokens, logits, labels = zip(*filtered)
-            words = text.split()
+    filtered = [(t, lg, lb) for t, lg, lb in zip(raw_tokens, raw_logits, raw_labels) if t not in special_tokens]
+    if not filtered:
+        return []
 
-            pos = 0
-            record_tokens: List[WordTokens] = []
-            for word in words:
-                pieces = tokenizer.tokenize(word)
-                count = len(pieces)
+    tokens, logits, labels = zip(*filtered)
+    words = text.split()
+    pos = 0
+    record_tokens: List[WordTokens] = []
 
-                slice_tokens = tokens[pos:pos + count]
-                slice_logits = logits[pos:pos + count]
-                slice_labels = labels[pos:pos + count]
+    for word in words:
+        pieces = tokenizer.tokenize(word)
+        count = len(pieces)
+        if pos + count > len(tokens):
+            break
 
-                token_reprs = [TokenRepresentation(tok, lgt, lbl) for tok, lgt, lbl in zip(slice_tokens, slice_logits, slice_labels)]
-                record_tokens.append(WordTokens(word, token_reprs))
+        slice_tokens = tokens[pos:pos + count]
+        slice_logits = logits[pos:pos + count]
+        slice_labels = labels[pos:pos + count]
 
-                pos += count
+        token_reprs = [TokenRepresentation(tok, lgt, lbl) for tok, lgt, lbl in zip(slice_tokens, slice_logits, slice_labels)]
+        record_tokens.append(WordTokens(word, token_reprs))
+        pos += count
 
-            all_records.append(record_tokens)
+    return record_tokens
 
-    return all_records
+def update_metrics(wt: WordTokens, local_stats: Dict[int, Tuple[int, int]], global_stats: Dict[int, Tuple[int, int]]) -> Tuple[int, int]:
+    if not wt.tokens:
+        return 0, 0
 
-def compute_label_metrics(word_tokens: List[WordTokens]) -> Dict[int, Tuple[int, int, float]]:
-    stats: Dict[int, Tuple[int, int]] = {}
-    for wt in word_tokens:
-        if not wt.tokens:
-            continue
+    pred = predict_label(wt)
+    true = wt.tokens[0].label
+    correct = int(pred == true)
 
-        pred = predict_label(wt)
-        true = wt.tokens[0].label
+    # Local update
+    c, t = local_stats.get(true, (0, 0))
+    local_stats[true] = (c + correct, t + 1)
 
-        correct, total = stats.get(true, (0, 0))
-        total += 1
-        if pred == true:
-            correct += 1
+    # Global update
+    c_g, t_g = global_stats.get(true, (0, 0))
+    global_stats[true] = (c_g + correct, t_g + 1)
 
-        stats[true] = (correct, total)
+    return correct, 1
 
+def compute_metrics(stats: Dict[int, Tuple[int, int]]) -> Dict[int, Tuple[int, int, float]]:
     return {lbl: (c, t, c / t if t > 0 else 0.0) for lbl, (c, t) in stats.items()}
-
-def compute_overall_accuracy(word_tokens: List[WordTokens]) -> Tuple[int, int, float]:
-    correct = total = 0
-    for wt in word_tokens:
-        if not wt.tokens:
-            continue
-
-        pred = predict_label(wt)
-        true = wt.tokens[0].label
-
-        if pred == true:
-            correct += 1
-        total += 1
-
-    return correct, total, correct / total if total > 0 else 0.0
 
 def annotate_word_tokens(word_tokens: List[WordTokens]) -> str:
     annotated_parts: List[str] = []
@@ -130,31 +117,48 @@ def annotate_word_tokens(word_tokens: List[WordTokens]) -> str:
 
     return ' '.join(annotated_parts).replace(" </span>", "</span>")
 
+def write_output(f_out, record_tokens: List[WordTokens], local_stats: Dict[int, Tuple[int, int]], correct: int, total: int):
+    annotated = annotate_word_tokens(record_tokens)
+    label_metrics = compute_metrics(local_stats)
+    label_metrics['overall'] = (correct, total, correct / total if total > 0 else 0.0)
+
+    out_obj = {
+        'annotated_text': annotated,
+        'metrics': label_metrics
+    }
+    f_out.write(json.dumps(out_obj) + '\n')
+
+def print_global_metrics(global_stats: Dict[int, Tuple[int, int]], overall_correct: int, overall_total: int):
+    print("===")
+    for label, (c, t) in sorted(global_stats.items()):
+        print(f"Label {label}: {c / t:.2%} ({c}/{t})")
+    overall_acc = overall_correct / overall_total if overall_total > 0 else 0.0
+    print(f"Overall: {overall_acc:.2%} ({overall_correct}/{overall_total})")
+    print("===")
+
 def process_records(input_path: str, output_path: str) -> None:
-    records = load_and_align(input_path)
-    global_tokens = [wt for rec in records for wt in rec]
+    tokenizer, special_tokens = load_tokenizer()
+    global_stats: Dict[int, Tuple[int, int]] = {}
+    overall_correct = 0
+    overall_total = 0
 
-    # Compute and print global metrics
-    metrics = compute_label_metrics(global_tokens)
-    correct, total, overall = compute_overall_accuracy(global_tokens)
+    with open(input_path, 'r', encoding='utf-8') as f_in, open(output_path, 'w', encoding='utf-8') as f_out:
+        for line in tqdm(f_in):
+            data = json.loads(line)
+            record_tokens = process_line(data, tokenizer, special_tokens)
+            if not record_tokens:
+                continue
 
-    print("===")
-    for label, (correct_label, total_label, acc) in sorted(metrics.items()):
-        print(f"Label {label}: {acc:.2%} ({correct_label}/{total_label})")
-    print(f"Overall: {overall:.2%} ({correct}/{total})")
-    print("===")
+            local_stats: Dict[int, Tuple[int, int]] = {}
+            correct = total = 0
 
-    # Write annotated records
-    with open(output_path, 'w', encoding='utf-8') as out_f:
-        for record_tokens in records:
-            flat_tokens = [wt for wt in record_tokens]
-            label_metrics = compute_label_metrics(flat_tokens)
-            correct, total, overall = compute_overall_accuracy(flat_tokens)
-            label_metrics['overall'] = (correct, total, overall)
+            for wt in record_tokens:
+                c, t = update_metrics(wt, local_stats, global_stats)
+                correct += c
+                total += t
 
-            annotated = annotate_word_tokens(record_tokens)
-            out_obj = {
-                'annotated_text': annotated,
-                'metrics': label_metrics
-            }
-            out_f.write(json.dumps(out_obj) + '\n')
+            overall_correct += correct
+            overall_total += total
+            write_output(f_out, record_tokens, local_stats, correct, total)
+
+    print_global_metrics(global_stats, overall_correct, overall_total)
