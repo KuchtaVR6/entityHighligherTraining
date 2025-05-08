@@ -7,7 +7,8 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCollatorForTokenClassification
 
 from src.load_helpers import load_large_dataset, tokenize_and_align_labels_batch
-from train import label_map, WeightedLossModel
+from src.train.model.weighted_loss_model import WeightedLossModel
+from src.label_map import label_map
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
