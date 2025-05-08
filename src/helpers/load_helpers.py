@@ -64,6 +64,6 @@ def tokenize_text(texts, tokenizer):
     return tokenized_inputs
 
 
-def load_large_dataset(file_path: str) -> Dataset:
+def load_large_dataset(file_path) -> Dataset:
     """Loads dataset efficiently using streaming for large files."""
-    return load_dataset('json', data_files=file_path, split='train', streaming=False)
+    return load_dataset('json', data_files=str(file_path), split='train', streaming=False)

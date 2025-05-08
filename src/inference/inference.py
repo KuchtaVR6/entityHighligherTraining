@@ -4,9 +4,9 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
-from src.load_helpers import load_large_dataset, tokenize_text
-from src.train.model.weighted_loss_model import WeightedLossModel
-from src.label_map import label_map
+from src.helpers.load_helpers import load_large_dataset, tokenize_text
+from src.models.weighted_loss_model import WeightedLossModel
+from src.helpers.label_map import label_map
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

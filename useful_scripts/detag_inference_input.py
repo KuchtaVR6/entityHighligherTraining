@@ -1,6 +1,6 @@
 import json
 
-from src.load_helpers import remove_span_tags
+from src.helpers.load_helpers import remove_span_tags
 
 
 # Function to load and process the infer.json file

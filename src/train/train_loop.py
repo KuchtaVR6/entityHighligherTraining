@@ -1,20 +1,10 @@
-import os
 import gc
 import torch
-from pathlib import Path
 from transformers import Trainer, DataCollatorForTokenClassification
-from src.train.config.training_args import get_training_args
-from src.train.model.weighted_loss_model import WeightedLossModel
+from src.configs.training_args import get_training_args
+from src.configs.path_config import save_model_path
 
-def run_training(train_dataset, val_dataset, tokenizer, base_model, class_weights):
-    model = WeightedLossModel(base_model, class_weights)
-
-    save_model_path = Path("results/custom_model.pth")
-
-    if os.path.exists(save_model_path):
-        model.load_state_dict(torch.load(save_model_path))
-
-    del base_model
+def run_training(train_dataset, val_dataset, tokenizer, model):
     gc.collect()
 
     data_collator = DataCollatorForTokenClassification(tokenizer)

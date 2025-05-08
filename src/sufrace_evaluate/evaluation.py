@@ -6,9 +6,10 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCollatorForTokenClassification
 
-from src.load_helpers import load_large_dataset, tokenize_and_align_labels_batch
-from src.train.model.weighted_loss_model import WeightedLossModel
-from src.label_map import label_map
+from src.helpers.load_helpers import load_large_dataset, tokenize_and_align_labels_batch
+from src.models.weighted_loss_model import WeightedLossModel
+from src.helpers.label_map import label_map
+from src.configs.path_config import save_model_path, eval_data_path
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -55,14 +56,14 @@ def compute_accuracy(model, val_dataloader, label_map):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    val_dataset = load_large_dataset('../../data/toy_eval.json')
+    val_dataset = load_large_dataset(eval_data_path)
 
-    tokenizer = AutoTokenizer.from_pretrained("../../results")
+    tokenizer = AutoTokenizer.from_pretrained(save_model_path.parent)
     base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
     class_weights = torch.tensor([0, 0, 0], dtype=torch.float)
 
     model = WeightedLossModel(base_model, class_weights)
-    model.load_state_dict(torch.load("../../results/custom_model.pth"))
+    model.load_state_dict(torch.load(save_model_path))
     model.to("cuda" if torch.cuda.is_available() else "cpu")  # Move model to GPU if available
 
     val_dataset = val_dataset.map(
