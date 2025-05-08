@@ -5,8 +5,9 @@ from tqdm import tqdm
 from transformers import BertTokenizerFast
 
 from .models import TokenRepresentation, WordTokens
+from src.helpers.label_map import label_map
 
-LABEL_MAP: Dict[int, str] = {1: 'B', 2: 'I', 0: 'O'}
+LABEL_MAP: Dict[int, str] = {v: k[0] if '-' in k else k for k, v in label_map.items()}
 
 def predict_label(word_token: WordTokens, prev_label: int = 0, summative_prediction: bool = False) -> int:
     if not word_token.tokens:

@@ -4,7 +4,9 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
+from src.configs.path_config import eval_data_path, save_model_path
 from src.helpers.load_helpers import load_large_dataset, tokenize_text
+from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer
 from src.models.weighted_loss_model import WeightedLossModel
 from src.helpers.label_map import label_map
 
@@ -83,15 +85,9 @@ def infer(model, infer_dataset, label_map):
 
 if __name__ == '__main__':
     logger.info("Loading datasets...")
-    val_dataset = load_large_dataset('../../infer/toy_train.json')
+    val_dataset = load_large_dataset(eval_data_path)
 
-    tokenizer = AutoTokenizer.from_pretrained("../../results")
-    base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
-    class_weights = torch.tensor([0, 0, 0], dtype=torch.float)
-
-    model = WeightedLossModel(base_model, class_weights)
-
-    model.load_state_dict(torch.load("../../results/custom_model.pth"))
+    model, tokenizer = load_model_and_tokenizer([0,0,0])
 
     val_dataset = val_dataset.map(
         lambda x: tokenize_text(x, tokenizer, label_map),
