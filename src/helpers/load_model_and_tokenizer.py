@@ -9,6 +9,13 @@ from src.models.weighted_loss_model import WeightedLossModel
 
 logger = setup_logger()
 
+def get_device():
+    if torch.backends.mps.is_available():
+        return "mps"
+    if torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
+
 def load_model_and_tokenizer(model_params):
     if os.path.exists(save_model_path):
         tokenizer = AutoTokenizer.from_pretrained(save_model_path.parent)
@@ -19,7 +26,7 @@ def load_model_and_tokenizer(model_params):
     class_weights = torch.tensor(model_params, dtype=torch.float)
 
     model = WeightedLossModel(base_model, class_weights)
-    model.to("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(get_device())
 
     if os.path.exists(save_model_path):
         logger.info("Using a trained model...")
