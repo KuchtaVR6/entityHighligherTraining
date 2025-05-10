@@ -7,7 +7,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCol
 
 from src.inference.compute_logits import compute_logits
 from src.helpers.load_helpers import load_large_dataset, tokenize_and_align_labels_batch, remove_span_tags
-from src.models.weighted_loss_model import MaskedWeightedLossModel
+from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
 from src.helpers.label_map import label_map
 from src.configs.path_config import eval_data_path, save_model_path
 
