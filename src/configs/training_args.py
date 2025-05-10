@@ -10,7 +10,7 @@ inference_batch_size = 128
 def get_training_args():
     return TrainingArguments(
         output_dir=checkpoints_path,
-        num_train_epochs=3,
+        num_train_epochs=1,
         per_device_train_batch_size=64,
         per_device_eval_batch_size=inference_batch_size,
         gradient_accumulation_steps=2,
