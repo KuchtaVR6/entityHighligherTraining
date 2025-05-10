@@ -7,7 +7,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCol
 
 from src.inference.compute_logits import compute_logits
 from src.helpers.load_helpers import load_large_dataset, tokenize_and_align_labels_batch, remove_span_tags
-from src.models.weighted_loss_model import WeightedLossModel
+from src.models.weighted_loss_model import MaskedWeightedLossModel
 from src.helpers.label_map import label_map
 from src.configs.path_config import eval_data_path, save_model_path
 
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
     class_weights = torch.tensor([0, 0, 0], dtype=torch.float)
 
-    model = WeightedLossModel(base_model, class_weights)
+    model = MaskedWeightedLossModel(base_model, class_weights)
     model.load_state_dict(torch.load(save_model_path))
 
     mapped_data = lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map)

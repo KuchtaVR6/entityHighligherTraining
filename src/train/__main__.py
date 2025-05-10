@@ -19,7 +19,7 @@ if __name__ == '__main__':
     logger.info("Tokenizing and aligning labels...")
 
     train_dataset = raw_train.map(
-        lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map),
+        lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map, proximity=6),
         batched=True, remove_columns=["text"]
     )
 

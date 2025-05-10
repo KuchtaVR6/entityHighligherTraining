@@ -7,7 +7,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 from src.configs.path_config import eval_data_path, save_model_path
 from src.helpers.load_helpers import load_large_dataset, tokenize_text
 from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer
-from src.models.weighted_loss_model import WeightedLossModel
+from src.models.weighted_loss_model import MaskedWeightedLossModel
 from src.helpers.label_map import label_map
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

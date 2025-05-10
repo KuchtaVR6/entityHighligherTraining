@@ -5,7 +5,7 @@ from src.configs.path_config import save_model_path
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
 from src.helpers.logging_utils import setup_logger
-from src.models.weighted_loss_model import WeightedLossModel
+from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
 
 logger = setup_logger()
 
@@ -25,7 +25,7 @@ def load_model_and_tokenizer(model_params):
     base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
     class_weights = torch.tensor(model_params, dtype=torch.float)
 
-    model = WeightedLossModel(base_model, class_weights)
+    model = MaskedWeightedLossModel(base_model, class_weights)
     model.to(get_device())
 
     if os.path.exists(save_model_path):
