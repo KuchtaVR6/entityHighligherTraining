@@ -5,6 +5,7 @@ import json
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCollatorForTokenClassification
 
+from src.configs.training_args import loss_span_proximity, inference_batch_size
 from src.inference.compute_logits import compute_logits
 from src.helpers.load_helpers import load_large_dataset, tokenize_and_align_labels_batch, remove_span_tags
 from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     model = MaskedWeightedLossModel(base_model, class_weights)
     model.load_state_dict(torch.load(save_model_path))
 
-    mapped_data = lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map)
+    mapped_data = lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map, proximity=loss_span_proximity)
 
     # Map data and remove the text column
     val_dataset = val_dataset.map(
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     )
 
     data_collator = DataCollatorForTokenClassification(tokenizer)
-    val_dataloader = DataLoader(val_dataset, batch_size=32, collate_fn=data_collator)
+    val_dataloader = DataLoader(val_dataset, batch_size=inference_batch_size, collate_fn=data_collator)
 
     logger.info("Computing logits...")
     results = compute_logits(model, val_dataloader, tokenizer)

@@ -5,7 +5,10 @@ from src.configs.path_config import save_model_path
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
 from src.helpers.logging_utils import setup_logger
+from src.configs.training_args import model_name
+
 from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
+from src.models.collapsed_ner_model_with_weights_and_masking import CollapsedNERModel
 
 logger = setup_logger()
 
@@ -16,16 +19,32 @@ def get_device():
         return "cuda"
     return "cpu"
 
+model_name_to_params = {
+    "masked_bert": {
+        "name": "bert-base-uncased",
+        "instance": MaskedWeightedLossModel,
+        "extra_params": {"num_labels": 3}
+    },
+    "masked_ner_bert": {
+        "name": "dslim/distilbert-NER",
+        "instance": CollapsedNERModel,
+        "extra_params": {}  # Add this to keep consistent
+    }
+}
+
 def load_model_and_tokenizer(model_params):
+
+    selected_information = model_name_to_params[model_name]
+
     if os.path.exists(save_model_path):
         tokenizer = AutoTokenizer.from_pretrained(save_model_path.parent)
     else:
-        tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+        tokenizer = AutoTokenizer.from_pretrained(selected_information["name"])
 
-    base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
+    base_model = AutoModelForTokenClassification.from_pretrained(selected_information["name"],  **selected_information.get("extra_params", {}))
     class_weights = torch.tensor(model_params, dtype=torch.float)
 
-    model = MaskedWeightedLossModel(base_model, class_weights)
+    model = selected_information["instance"](base_model, class_weights)
     model.to(get_device())
 
     if os.path.exists(save_model_path):

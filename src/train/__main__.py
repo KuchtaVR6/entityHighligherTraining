@@ -1,3 +1,4 @@
+from src.configs.training_args import loss_span_proximity
 from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer
 from src.helpers.logging_utils import setup_logger
 from src.train.train_loop import run_training
@@ -19,12 +20,12 @@ if __name__ == '__main__':
     logger.info("Tokenizing and aligning labels...")
 
     train_dataset = raw_train.map(
-        lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map, proximity=6),
+        lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map, proximity=loss_span_proximity),
         batched=True, remove_columns=["text"]
     )
 
     val_dataset = raw_val.map(
-        lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map),
+        lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map, proximity=loss_span_proximity),
         batched=True, remove_columns=["text"]
     )
 
