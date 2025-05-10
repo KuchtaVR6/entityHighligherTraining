@@ -5,13 +5,13 @@ from src.configs.path_config import checkpoints_path, logs_path
 model_name = "masked_ner_bert"
 
 loss_span_proximity = 6
-inference_batch_size = 16
+inference_batch_size = 64
 
 def get_training_args():
     return TrainingArguments(
         output_dir=checkpoints_path,
         num_train_epochs=3,
-        per_device_train_batch_size=8,
+        per_device_train_batch_size=16,
         per_device_eval_batch_size=inference_batch_size,
         gradient_accumulation_steps=2,
         warmup_steps=500,
