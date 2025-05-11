@@ -30,8 +30,15 @@ if __name__ == '__main__':
     )
 
     logger.info("Computing class weights...")
-    # Use the new parameter to consider the loss mask when calculating weights
-    class_weights = [1 / share for share in calc_distribution(train_dataset, consider_mask=True)]
+    # Sample a portion of the dataset to calculate weights quickly
+    distribution = calc_distribution(
+        train_dataset,
+        consider_mask=True,
+        max_samples=5000,
+        use_cache=True
+    )
+    class_weights = [1 / share for share in distribution]
+    logger.info(f"Class weights: {class_weights}")
 
     # Load model with proper weights (only once)
     model, _ = load_model_and_tokenizer(class_weights)
