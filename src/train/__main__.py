@@ -1,5 +1,5 @@
 from src.configs.training_args import loss_span_proximity
-from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer
+from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer, get_tokenizer_only
 from src.helpers.logging_utils import setup_logger
 from src.train.train_loop import run_training
 from src.helpers.load_helpers import tokenize_and_align_labels_batch
@@ -15,10 +15,10 @@ if __name__ == '__main__':
     raw_train = load_large_dataset(train_data_path)
     raw_val = load_large_dataset(eval_data_path)
 
-    _, tokenizer = load_model_and_tokenizer([0,0,0])
+    # Get tokenizer only (no model loading yet)
+    tokenizer = get_tokenizer_only()
 
     logger.info("Tokenizing and aligning labels...")
-
     train_dataset = raw_train.map(
         lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map, proximity=loss_span_proximity),
         batched=True, remove_columns=["text"]
@@ -30,8 +30,10 @@ if __name__ == '__main__':
     )
 
     logger.info("Computing class weights...")
-    class_weights = [1 / share for share in calc_distribution(train_dataset)]
+    # Use the new parameter to consider the loss mask when calculating weights
+    class_weights = [1 / share for share in calc_distribution(train_dataset, consider_mask=True)]
 
+    # Load model with proper weights (only once)
     model, _ = load_model_and_tokenizer(class_weights)
 
     logger.info("Starting training...")
