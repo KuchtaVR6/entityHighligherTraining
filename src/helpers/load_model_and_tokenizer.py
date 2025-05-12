@@ -32,8 +32,8 @@ model_name_to_params = {
     }
 }
 
-def load_model_and_tokenizer(model_params):
-
+def get_tokenizer_only():
+    """Get only the tokenizer without loading the model."""
     selected_information = model_name_to_params[model_name]
 
     if os.path.exists(save_model_path):
@@ -41,17 +41,31 @@ def load_model_and_tokenizer(model_params):
     else:
         tokenizer = AutoTokenizer.from_pretrained(selected_information["name"])
 
-    base_model = AutoModelForTokenClassification.from_pretrained(selected_information["name"],  **selected_information.get("extra_params", {}))
-    class_weights = torch.tensor(model_params, dtype=torch.float)
+    return tokenizer
 
+def load_model_and_tokenizer(model_params):
+    """Load both model and tokenizer with the specified class weights."""
+    selected_information = model_name_to_params[model_name]
+
+    # Reuse the tokenizer function
+    tokenizer = get_tokenizer_only()
+
+    # Load the base model
+    base_model = AutoModelForTokenClassification.from_pretrained(
+        selected_information["name"],
+        **selected_information.get("extra_params", {})
+    )
+
+    # Create class weights tensor and instantiate the model
+    class_weights = torch.tensor(model_params, dtype=torch.float)
     model = selected_information["instance"](base_model, class_weights)
     model.to(get_device())
 
+    # Load trained weights if available
     if os.path.exists(save_model_path):
         logger.info("Using a trained model...")
         model.load_state_dict(torch.load(save_model_path))
     else:
         logger.info("Using a pretrained base model...")
-
 
     return model, tokenizer
