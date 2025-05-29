@@ -3,7 +3,9 @@ import torch.nn as nn
 
 
 class CollapsedNERModel(nn.Module):
-    def __init__(self, base_model: nn.Module, class_weights: list[float]) -> None:
+    def __init__(
+        self, base_model: nn.Module, class_weights: list[float] | torch.Tensor
+    ) -> None:
         super().__init__()
         self.base_model = base_model
 
@@ -11,9 +13,12 @@ class CollapsedNERModel(nn.Module):
         self.b_ids = [1, 3, 5, 7]
         self.i_ids = [2, 4, 6, 8]
 
-        self.loss_fn = nn.CrossEntropyLoss(
-            weight=torch.tensor(class_weights, dtype=torch.float), reduction="none"
+        weights_tensor = (
+            class_weights
+            if isinstance(class_weights, torch.Tensor)
+            else torch.tensor(class_weights, dtype=torch.float)
         )
+        self.loss_fn = nn.CrossEntropyLoss(weight=weights_tensor, reduction="none")
 
     def collapse_logits(self, logits: torch.Tensor) -> torch.Tensor:
         collapsed_logits = torch.zeros(logits.size(0), logits.size(1), 3).to(

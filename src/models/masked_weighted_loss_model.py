@@ -10,15 +10,18 @@ class MaskedWeightedLossModel(nn.Module):
     def __init__(
         self,
         base_model: PreTrainedModel,
-        class_weights: list[float],
+        class_weights: list[float] | torch.Tensor,
         dropout_prob: float = 0.1,
     ) -> None:
         super().__init__()
         self.base_model = base_model
         self.dropout = nn.Dropout(p=dropout_prob)
-        self.loss_fn = nn.CrossEntropyLoss(
-            weight=torch.tensor(class_weights, dtype=torch.float), reduction="none"
+        weights_tensor = (
+            class_weights
+            if isinstance(class_weights, torch.Tensor)
+            else torch.tensor(class_weights, dtype=torch.float)
         )
+        self.loss_fn = nn.CrossEntropyLoss(weight=weights_tensor, reduction="none")
 
     def calculate_weighted_loss(self, logits: Tensor, labels: Tensor) -> Tensor:
         return self.loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))

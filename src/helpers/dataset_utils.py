@@ -45,7 +45,8 @@ def calc_distribution(
         try:
             with open(cache_path) as f:
                 cached_dist = json.load(f)
-                return cached_dist
+                # Ensure we return a list[float] even if cached as list[int]
+                return [float(x) for x in cached_dist]
         except Exception:
             pass
 

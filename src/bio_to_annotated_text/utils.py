@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 import sys
 
@@ -12,9 +13,10 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 from src.utils.logger import setup_logger
+from typing import cast
 
-# Set up logger
-logger = setup_logger(__name__)
+# Set up logger with explicit type annotation
+logger = cast(logging.Logger, setup_logger(__name__))
 
 from src.helpers.label_map import label_map
 

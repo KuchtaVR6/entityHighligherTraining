@@ -8,7 +8,7 @@ loss_span_proximity = 6
 inference_batch_size = 16
 
 
-def get_training_args():
+def get_training_args() -> TrainingArguments:
     return TrainingArguments(
         output_dir=checkpoints_path,
         num_train_epochs=3,
