@@ -1,5 +1,5 @@
 import os
-from typing import Any, Literal, TypedDict, Union
+from typing import Any, Literal, TypedDict
 
 import torch
 from transformers import (
@@ -16,7 +16,7 @@ from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
 
 logger = setup_logger()
 
-ModelType = Union[MaskedWeightedLossModel, CollapsedNERModel]
+ModelType = MaskedWeightedLossModel | CollapsedNERModel
 
 
 class ModelConfig(TypedDict):

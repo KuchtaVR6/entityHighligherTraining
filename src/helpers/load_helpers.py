@@ -1,6 +1,9 @@
+from pathlib import Path
 import re
 
 from datasets import Dataset, load_dataset
+import torch
+from transformers import BatchEncoding, PreTrainedTokenizerBase
 
 
 def remove_span_tags(text: str) -> str:
@@ -18,14 +21,10 @@ def transform_to_bio(annotated: str) -> list[str]:
             current_tag = None
         elif token.strip():
             words = token.split()
-            for i, word in enumerate(words):
+            for i, _word in enumerate(words):
                 tag_prefix = "B" if i == 0 else "I"
                 tags.append(f"{tag_prefix}-EMPH" if current_tag else "O")
     return tags
-
-
-import torch
-from transformers import PreTrainedTokenizerBase
 
 
 def tokenize_and_align_labels_batch(
@@ -91,9 +90,6 @@ def tokenize_and_align_labels_batch(
     }
 
 
-from transformers import BatchEncoding
-
-
 def tokenize_text(
     texts: list[str], tokenizer: PreTrainedTokenizerBase
 ) -> BatchEncoding:
@@ -110,9 +106,6 @@ def tokenize_text(
     )
 
     return tokenized_inputs
-
-
-from pathlib import Path
 
 
 def load_large_dataset(file_path: str | Path) -> Dataset:

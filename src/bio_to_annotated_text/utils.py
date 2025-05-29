@@ -2,26 +2,23 @@ import json
 import logging
 from pathlib import Path
 import sys
+from typing import Any, TextIO
+
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
 
 import numpy as np
 from tqdm import tqdm
 from transformers import BertTokenizerFast
 
-# Add project root to path
-project_root = str(Path(__file__).parent.parent.parent)
-if project_root not in sys.path:
-    sys.path.append(project_root)
-
-
-from src.utils.logger import setup_logger
-
-# Set up logger
-logger: logging.Logger = setup_logger(__name__)
-
 from src.helpers.label_map import label_map
+from src.utils.logger import setup_logger
 
 from .models import TokenRepresentation, WordTokens
 
+# Set up logger
+logger: logging.Logger = setup_logger(__name__)
 LABEL_MAP: dict[int, str] = {v: k[0] if "-" in k else k for k, v in label_map.items()}
 
 
@@ -56,9 +53,6 @@ def predict_label(
 def load_tokenizer() -> tuple[BertTokenizerFast, set[str]]:
     tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
     return tokenizer, set(tokenizer.all_special_tokens)
-
-
-from typing import Any, TextIO
 
 
 def process_line(

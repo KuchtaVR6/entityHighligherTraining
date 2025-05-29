@@ -1,34 +1,36 @@
+# Standard library imports
 from collections import defaultdict
 import logging
 from pathlib import Path
 import sys
 from typing import Any
 
+# Third-party imports
 import torch
 from torch.utils.data import DataLoader
+from tqdm import tqdm
+from transformers import DataCollatorForTokenClassification, PreTrainedModel
+
+# Local application imports
+from src.configs.path_config import eval_data_path
+from src.helpers.label_map import label_map
+from src.helpers.load_helpers import (
+    load_large_dataset,
+    tokenize_and_align_labels_batch,
+)
+from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer
+from src.helpers.logging_utils import setup_logger
 
 # Add project root to path
 project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from transformers import PreTrainedModel
-
-from src.helpers.logging_utils import setup_logger
-
 # Set up logger
-logger = setup_logger()
-from tqdm import tqdm
-from transformers import DataCollatorForTokenClassification
-
-from src.configs.path_config import eval_data_path
-from src.helpers.label_map import label_map
-from src.helpers.load_helpers import load_large_dataset, tokenize_and_align_labels_batch
-from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer
-
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+logger = setup_logger()
 logger = logging.getLogger(__name__)
 
 

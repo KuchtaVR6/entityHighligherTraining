@@ -41,9 +41,10 @@ if __name__ == "__main__":
     model = MaskedWeightedLossModel(base_model, class_weights)
     model.load_state_dict(torch.load(save_model_path))
 
-    mapped_data = lambda x: tokenize_and_align_labels_batch(
-        x, tokenizer, label_map, proximity=loss_span_proximity
-    )
+    def mapped_data(x):
+        return tokenize_and_align_labels_batch(
+            x, tokenizer, label_map, proximity=loss_span_proximity
+        )
 
     # Map data and remove the text column
     val_dataset = val_dataset.map(mapped_data, batched=True, remove_columns=["text"])

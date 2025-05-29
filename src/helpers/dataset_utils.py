@@ -2,7 +2,6 @@ from collections import Counter
 import json
 import os
 import random
-import time
 
 from datasets import Dataset
 
@@ -33,7 +32,6 @@ def calc_distribution(
     Returns:
         List of class distribution values
     """
-    start_time = time.time()
     dataset_size = len(train_dataset)
 
     # Generate cache key

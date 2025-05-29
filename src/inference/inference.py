@@ -9,16 +9,16 @@ import torch
 from tqdm import tqdm
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
-# Add project root to path
-project_root = str(Path(__file__).parent.parent.parent)
-if project_root not in sys.path:
-    sys.path.append(project_root)
-
 from src.configs.path_config import eval_data_path
 from src.helpers.label_map import label_map
 from src.helpers.load_helpers import load_large_dataset, tokenize_text
 from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer
 from src.utils.logger import setup_logger
+
+# Add project root to path
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
 
 # Set up logger
 logger: logging.Logger = setup_logger(__name__)
