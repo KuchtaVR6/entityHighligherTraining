@@ -3,11 +3,11 @@ import re
 from datasets import Dataset, load_dataset
 
 
-def remove_span_tags(text):
+def remove_span_tags(text: str) -> str:
     return re.sub(r"<\/?.*?span.*?>", "", text)
 
 
-def transform_to_bio(annotated):
+def transform_to_bio(annotated: str) -> list[str]:
     tags, current_tag = [], None
     text_with_tags = re.split(r"(<[^>]+>)", annotated)
 
@@ -24,7 +24,16 @@ def transform_to_bio(annotated):
     return tags
 
 
-def tokenize_and_align_labels_batch(examples, tokenizer, label_map, proximity=None):
+import torch
+from transformers import PreTrainedTokenizerBase
+
+
+def tokenize_and_align_labels_batch(
+    examples: dict[str, list[str]],
+    tokenizer: PreTrainedTokenizerBase,
+    label_map: dict[str, int],
+    proximity: int | None = None,
+) -> dict[str, torch.Tensor | list[list[int]]]:
     """Processes raw text, extracts BIO tags, tokenizes, aligns labels, and computes loss mask."""
     raw_texts = [remove_span_tags(entry) for entry in examples["text"]]
     bio_tags = [transform_to_bio(entry) for entry in examples["text"]]
@@ -40,7 +49,7 @@ def tokenize_and_align_labels_batch(examples, tokenizer, label_map, proximity=No
 
     labels = []
     if proximity is not None:
-        loss_masks = []
+        loss_masks: list[list[int]] = []
     else:
         loss_masks = None
 
@@ -82,7 +91,12 @@ def tokenize_and_align_labels_batch(examples, tokenizer, label_map, proximity=No
     }
 
 
-def tokenize_text(texts, tokenizer):
+from transformers import BatchEncoding
+
+
+def tokenize_text(
+    texts: list[str], tokenizer: PreTrainedTokenizerBase
+) -> BatchEncoding:
     """Tokenizes raw texts (no labels, no XML tags) for inference."""
     cleaned_texts = texts
 
@@ -98,7 +112,10 @@ def tokenize_text(texts, tokenizer):
     return tokenized_inputs
 
 
-def load_large_dataset(file_path) -> Dataset:
+from pathlib import Path
+
+
+def load_large_dataset(file_path: str | Path) -> Dataset:
     return load_dataset(
         "json", data_files=str(file_path), split="train", streaming=False
     )
