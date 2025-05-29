@@ -48,10 +48,7 @@ def tokenize_and_align_labels_batch(
     )
 
     labels = []
-    if proximity is not None:
-        loss_masks: list[list[int]] = []
-    else:
-        loss_masks = None
+    loss_masks: list[list[int]] = []
 
     for i, label in enumerate(bio_tags):
         word_ids = tokenized_inputs.word_ids(batch_index=i)
@@ -80,6 +77,9 @@ def tokenize_and_align_labels_batch(
                     mask[i] = 1
 
             loss_masks.append(mask)
+        elif proximity is not None:
+            # If proximity is not None but no mask was added, add a default mask of 1s
+            loss_masks.append([1] * len(seq_labels))
 
         labels.append(seq_labels)
 

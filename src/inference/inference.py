@@ -132,8 +132,10 @@ if __name__ == "__main__":
     logger.info("Loading datasets...")
     val_dataset = load_large_dataset(eval_data_path)
 
-    # Load model and tokenizer
-    model, tokenizer = load_model_and_tokenizer()
+    # Load model and tokenizer with zero weights since we're just doing inference
+    model, tokenizer = load_model_and_tokenizer(
+        model_params=[0, 0, 0]
+    )  # Using zero weights for inference
 
     if model is None or tokenizer is None:
         logger.error("Failed to load model or tokenizer")

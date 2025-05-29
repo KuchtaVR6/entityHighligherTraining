@@ -2,6 +2,7 @@ from collections import defaultdict
 import logging
 from pathlib import Path
 import sys
+from typing import Any
 
 import torch
 from torch.utils.data import DataLoader
@@ -32,7 +33,9 @@ logger = logging.getLogger(__name__)
 
 
 def compute_accuracy(
-    model: PreTrainedModel, val_dataloader: DataLoader, label_map: dict[str, int]
+    model: PreTrainedModel,
+    val_dataloader: DataLoader[dict[str, Any]],
+    label_map: dict[str, int],
 ) -> dict[str, float]:
     model.eval()
     correct_counts: dict[int, int] = defaultdict(int)

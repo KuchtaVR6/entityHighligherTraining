@@ -2,23 +2,30 @@ from typing import Any
 
 import torch
 from torch import nn
-from torch.utils.data import Dataset as TorchDataset
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import PreTrainedTokenizerBase
 
 
 def compute_logits(
     model: nn.Module,
-    infer_dataset: TorchDataset[Any],
+    dataloader: DataLoader[Any],
     tokenizer: PreTrainedTokenizerBase,
     max_examples: int | None = None,
 ) -> list[dict[str, Any]]:
     model.eval()
     results: list[dict[str, Any]] = []
 
-    for i, batch in enumerate(tqdm(infer_dataset)):
-        if max_examples is not None and i >= max_examples:
+    total_examples = 0
+    for batch in tqdm(dataloader):
+        if max_examples is not None and total_examples >= max_examples:
             break
+
+        batch_size = len(batch["input_ids"])
+        if max_examples is not None and total_examples + batch_size > max_examples:
+            # Truncate the last batch if it would exceed max_examples
+            batch = {k: v[: max_examples - total_examples] for k, v in batch.items()}
+            batch_size = len(batch["input_ids"])
 
         input_ids: torch.Tensor = batch["input_ids"]
         attention_mask: torch.Tensor = batch["attention_mask"]
