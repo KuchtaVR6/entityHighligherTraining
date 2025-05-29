@@ -11,7 +11,7 @@ def get_training_args():
     return TrainingArguments(
         output_dir=checkpoints_path,
         num_train_epochs=1,
-        learning_rate=1e-4,
+        learning_rate=5e-5,
         per_device_train_batch_size=64,
         per_device_eval_batch_size=inference_batch_size,
         gradient_accumulation_steps=2,
