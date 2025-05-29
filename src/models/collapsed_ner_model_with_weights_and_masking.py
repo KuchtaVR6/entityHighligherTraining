@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class CollapsedNERModel(nn.Module):
-    def __init__(self, base_model, class_weights):
+    def __init__(self, base_model: nn.Module, class_weights: list[float]) -> None:
         super().__init__()
         self.base_model = base_model
 
@@ -15,7 +15,7 @@ class CollapsedNERModel(nn.Module):
             weight=torch.tensor(class_weights, dtype=torch.float), reduction="none"
         )
 
-    def collapse_logits(self, logits):
+    def collapse_logits(self, logits: torch.Tensor) -> torch.Tensor:
         collapsed_logits = torch.zeros(logits.size(0), logits.size(1), 3).to(
             logits.device
         )
@@ -25,8 +25,13 @@ class CollapsedNERModel(nn.Module):
         return collapsed_logits
 
     def forward(
-        self, input_ids, attention_mask=None, labels=None, loss_mask=None, **kwargs
-    ):
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+        loss_mask: torch.Tensor | None = None,
+        **kwargs
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         outputs = self.base_model(
             input_ids=input_ids, attention_mask=attention_mask, **kwargs
         )

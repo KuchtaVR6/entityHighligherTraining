@@ -1,7 +1,14 @@
 import os
+from typing import Literal, Type, Union, Any, TypedDict
 
 import torch
-from transformers import AutoModelForTokenClassification, AutoTokenizer
+from torch import Tensor
+from torch.nn import Module
+from transformers import (
+    AutoModelForTokenClassification,
+    AutoTokenizer,
+    PreTrainedTokenizerFast,
+)
 
 from src.configs.path_config import save_model_path
 from src.configs.training_args import model_name
@@ -11,8 +18,15 @@ from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
 
 logger = setup_logger()
 
+ModelType = Union[MaskedWeightedLossModel, CollapsedNERModel]
 
-def get_device():
+
+class ModelConfig(TypedDict):
+    name: str
+    instance: Type[ModelType]
+    extra_params: dict[str, Any]
+
+def get_device() -> Literal["mps", "cuda", "cpu"]:
     if torch.backends.mps.is_available():
         return "mps"
     if torch.cuda.is_available():
@@ -20,7 +34,7 @@ def get_device():
     return "cpu"
 
 
-model_name_to_params = {
+model_name_to_params: dict[str, ModelConfig] = {
     "masked_bert": {
         "name": "bert-base-uncased",
         "instance": MaskedWeightedLossModel,
@@ -34,7 +48,9 @@ model_name_to_params = {
 }
 
 
-def get_tokenizer_only():
+
+
+def get_tokenizer_only() -> PreTrainedTokenizerFast:
     """Get only the tokenizer without loading the model."""
     selected_information = model_name_to_params[model_name]
 
@@ -46,7 +62,11 @@ def get_tokenizer_only():
     return tokenizer
 
 
-def load_model_and_tokenizer(model_params):
+
+
+def load_model_and_tokenizer(
+    model_params: list[float],
+) -> tuple[ModelType, PreTrainedTokenizerFast]:
     """Load both model and tokenizer with the specified class weights."""
     selected_information = model_name_to_params[model_name]
 
@@ -60,7 +80,8 @@ def load_model_and_tokenizer(model_params):
 
     # Create class weights tensor and instantiate the model
     class_weights = torch.tensor(model_params, dtype=torch.float)
-    model = selected_information["instance"](base_model, class_weights)
+    model_class = selected_information["instance"]
+    model = model_class(base_model, class_weights)
     model.to(get_device())
 
     # Load trained weights if available

@@ -11,7 +11,7 @@ project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from src.utils.logger import setup_logger
+from src.utils.logger import setup_logger  # type: ignore
 
 # Set up logger
 logger = setup_logger(__name__)
@@ -51,12 +51,17 @@ def predict_label(
     return pred
 
 
-def load_tokenizer():
+def load_tokenizer() -> tuple[BertTokenizerFast, set[str]]:
     tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
     return tokenizer, set(tokenizer.all_special_tokens)
 
 
-def process_line(data: dict, tokenizer, special_tokens) -> list[WordTokens]:
+from typing import Any
+
+
+def process_line(
+    data: dict[str, Any], tokenizer: BertTokenizerFast, special_tokens: set[str]
+) -> list[WordTokens]:
     raw_tokens, raw_logits, raw_labels = data["tokens"], data["logits"], data["labels"]
     text = data["text"]
 
@@ -157,13 +162,16 @@ def annotate_word_tokens(word_tokens: list[WordTokens]) -> str:
     return " ".join(annotated_parts).replace(" </span>", "</span>")
 
 
+from typing import TextIO
+
+
 def write_output(
-    f_out,
+    f_out: TextIO,
     record_tokens: list[WordTokens],
     local_stats: dict[int, tuple[int, int]],
     correct: int,
     total: int,
-):
+) -> None:
     annotated = annotate_word_tokens(record_tokens)
     label_metrics = compute_metrics(local_stats)
     label_metrics["overall"] = (correct, total, correct / total if total > 0 else 0.0)
