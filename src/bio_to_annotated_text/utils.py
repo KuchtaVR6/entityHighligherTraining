@@ -11,7 +11,7 @@ project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from src.utils.logger import setup_logger  # type: ignore
+from src.utils.logger import setup_logger
 
 # Set up logger
 logger = setup_logger(__name__)
@@ -173,8 +173,9 @@ def write_output(
     total: int,
 ) -> None:
     annotated = annotate_word_tokens(record_tokens)
-    label_metrics = compute_metrics(local_stats)
-    label_metrics["overall"] = (correct, total, correct / total if total > 0 else 0.0)
+    label_metrics = dict(compute_metrics(local_stats))
+    # Add overall metrics with proper type handling
+    label_metrics["overall"] = (correct, total, correct / total if total > 0 else 0.0)  # type: ignore
 
     out_obj = {"annotated_text": annotated, "metrics": label_metrics}
     f_out.write(json.dumps(out_obj) + "\n")
@@ -182,7 +183,7 @@ def write_output(
 
 def print_global_metrics(
     global_stats: dict[int, tuple[int, int]], overall_correct: int, overall_total: int
-):
+) -> None:
     """Log global metrics for model evaluation.
 
     Args:

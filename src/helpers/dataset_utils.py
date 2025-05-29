@@ -61,8 +61,8 @@ def calc_distribution(
     else:
         sampled_dataset = train_dataset
 
-    # Initialize counter
-    tag_counter = Counter()
+    # Initialize counter with type annotation
+    tag_counter: dict[int, int] = Counter()
 
     # Count class occurrences (optimized for proximity)
     if consider_mask and "loss_mask" in sampled_dataset.features:
@@ -99,7 +99,11 @@ def calc_distribution(
     # Prevent division by zero
     if total == 0:
         logger.warning("No tokens counted! Using equal distribution.")
-        distribution = [1 / 3, 1 / 3, 1 / 3]  # Equal weights if no data
+        distribution: list[float] = [
+            1.0 / 3,
+            1.0 / 3,
+            1.0 / 3,
+        ]  # Equal weights if no data
     else:
         distribution = [tag_counter[tag] / total for tag in sorted(tag_counter)]
 

@@ -1,9 +1,7 @@
 import os
-from typing import Literal, Type, Union, Any, TypedDict
+from typing import Any, Literal, TypedDict, Union
 
 import torch
-from torch import Tensor
-from torch.nn import Module
 from transformers import (
     AutoModelForTokenClassification,
     AutoTokenizer,
@@ -23,8 +21,9 @@ ModelType = Union[MaskedWeightedLossModel, CollapsedNERModel]
 
 class ModelConfig(TypedDict):
     name: str
-    instance: Type[ModelType]
+    instance: type[ModelType]
     extra_params: dict[str, Any]
+
 
 def get_device() -> Literal["mps", "cuda", "cpu"]:
     if torch.backends.mps.is_available():
@@ -48,8 +47,6 @@ model_name_to_params: dict[str, ModelConfig] = {
 }
 
 
-
-
 def get_tokenizer_only() -> PreTrainedTokenizerFast:
     """Get only the tokenizer without loading the model."""
     selected_information = model_name_to_params[model_name]
@@ -60,8 +57,6 @@ def get_tokenizer_only() -> PreTrainedTokenizerFast:
         tokenizer = AutoTokenizer.from_pretrained(selected_information["name"])
 
     return tokenizer
-
-
 
 
 def load_model_and_tokenizer(
