@@ -39,7 +39,7 @@ class CollapsedNERModel(nn.Module):
         labels: Tensor | None = None,
         loss_mask: Tensor | None = None,
         **kwargs: Any
-    ) -> tuple[Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor] | Tensor:
         """Forward pass with collapsed NER logits and optional loss calculation.
 
         Args:

@@ -2,14 +2,14 @@ from typing import Any
 
 import torch
 from torch import nn
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset as TorchDataset
 from tqdm import tqdm
 from transformers import PreTrainedTokenizerBase
 
 
 def compute_logits(
     model: nn.Module,
-    infer_dataset: Dataset,
+    infer_dataset: TorchDataset[Any],
     tokenizer: PreTrainedTokenizerBase,
     max_examples: int | None = None,
 ) -> list[dict[str, Any]]:

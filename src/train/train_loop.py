@@ -44,3 +44,5 @@ def run_training(
     save_model_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), save_model_path)
     tokenizer.save_pretrained(save_model_path.parent)
+
+    return model, trainer

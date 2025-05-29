@@ -33,7 +33,7 @@ def tokenize_and_align_labels_batch(
     tokenizer: PreTrainedTokenizerBase,
     label_map: dict[str, int],
     proximity: int | None = None,
-) -> dict[str, torch.Tensor | list[list[int]]]:
+) -> dict[str, torch.Tensor | list[list[int]] | None]:
     """Processes raw text, extracts BIO tags, tokenizes, aligns labels, and computes loss mask."""
     raw_texts = [remove_span_tags(entry) for entry in examples["text"]]
     bio_tags = [transform_to_bio(entry) for entry in examples["text"]]
