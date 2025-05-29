@@ -1,6 +1,19 @@
 import json
 import os
 import math
+import logging
+from pathlib import Path
+import sys
+
+# Add project root to path
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from src.utils.logger import setup_logger
+
+# Set up logger
+logger = setup_logger('dataset_splitter')
 
 
 # Function to split the dataset
@@ -28,7 +41,7 @@ def split_json(input_file, output_folder, num_parts=6):
         with open(part_filename, 'w') as part_file:
             json.dump(part_data, part_file, indent=4)
 
-        print(f"Created: {part_filename}")
+        logger.info(f"Successfully created dataset part: {part_filename}")
 
 
 # Example usage

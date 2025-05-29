@@ -1,8 +1,8 @@
+from collections import Counter
 import json
 import os
 import random
 import time
-from collections import Counter
 
 from datasets import Dataset
 

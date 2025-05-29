@@ -1,7 +1,19 @@
 import logging
+from pathlib import Path
+import sys
 
 import torch
 from tqdm import tqdm
+
+# Add project root to path
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from src.utils.logger import setup_logger
+
+# Set up logger
+logger = setup_logger(__name__)
 
 from src.configs.path_config import eval_data_path
 from src.helpers.label_map import label_map
@@ -94,7 +106,7 @@ def infer(model, infer_dataset, label_map):
                 highlighted_text = annotated_output
 
             # Join all parts into a single string for output
-            print(" ".join(highlighted_text))
+            logger.info(" ".join(highlighted_text))
 
 
 if __name__ == "__main__":
@@ -109,4 +121,5 @@ if __name__ == "__main__":
         remove_columns=["text"],
     )
 
-    print(infer(model, val_dataset, label_map))
+    result = infer(model, val_dataset, label_map)
+    logger.info(f"Inference result: {result}")

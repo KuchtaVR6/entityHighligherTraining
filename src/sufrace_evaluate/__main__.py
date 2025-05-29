@@ -1,8 +1,20 @@
-import logging
 from collections import defaultdict
+import logging
+from pathlib import Path
+import sys
 
 import torch
 from torch.utils.data import DataLoader
+
+# Add project root to path
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from src.utils.logger import setup_logger
+
+# Set up logger
+logger = setup_logger(__name__)
 from tqdm import tqdm
 from transformers import (
     DataCollatorForTokenClassification,
@@ -80,4 +92,5 @@ if __name__ == "__main__":
     data_collator = DataCollatorForTokenClassification(tokenizer)
     val_dataloader = DataLoader(val_dataset, batch_size=16, collate_fn=data_collator)
 
-    print(compute_accuracy(model, val_dataloader, label_map))
+    accuracy = compute_accuracy(model, val_dataloader, label_map)
+    logger.info(f"Model accuracy: {accuracy}")

@@ -1,8 +1,20 @@
 import json
+from pathlib import Path
+import sys
 
 import numpy as np
 from tqdm import tqdm
 from transformers import BertTokenizerFast
+
+# Add project root to path
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from src.utils.logger import setup_logger
+
+# Set up logger
+logger = setup_logger(__name__)
 
 from src.helpers.label_map import label_map
 
@@ -73,7 +85,9 @@ def process_line(data: dict, tokenizer, special_tokens) -> list[WordTokens]:
 
         token_reprs = [
             TokenRepresentation(tok, lgt, lbl)
-            for tok, lgt, lbl in zip(slice_tokens, slice_logits, slice_labels, strict=False)
+            for tok, lgt, lbl in zip(
+                slice_tokens, slice_logits, slice_labels, strict=False
+            )
         ]
         record_tokens.append(WordTokens(word, token_reprs))
         pos += count
@@ -161,12 +175,19 @@ def write_output(
 def print_global_metrics(
     global_stats: dict[int, tuple[int, int]], overall_correct: int, overall_total: int
 ):
-    print("===")
+    """Log global metrics for model evaluation.
+
+    Args:
+        global_stats: Dictionary mapping label to (correct, total) counts
+        overall_correct: Total number of correct predictions
+        overall_total: Total number of predictions
+    """
+    logger.info("===")
     for label, (c, t) in sorted(global_stats.items()):
-        print(f"Label {label}: {c / t:.2%} ({c}/{t})")
+        logger.info(f"Label {label}: {c / t:.2%} ({c}/{t})")
     overall_acc = overall_correct / overall_total if overall_total > 0 else 0.0
-    print(f"Overall: {overall_acc:.2%} ({overall_correct}/{overall_total})")
-    print("===")
+    logger.info(f"Overall: {overall_acc:.2%} ({overall_correct}/{overall_total})")
+    logger.info("===")
 
 
 def process_records(input_path: str, output_path: str) -> None:
