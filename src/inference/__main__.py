@@ -41,7 +41,9 @@ if __name__ == "__main__":
     model = MaskedWeightedLossModel(base_model, class_weights)
     model.load_state_dict(torch.load(save_model_path))
 
-    def mapped_data(x):
+    def mapped_data(
+        x: dict[str, list[str]],
+    ) -> dict[str, torch.Tensor | list[list[int]] | None]:
         return tokenize_and_align_labels_batch(
             x, tokenizer, label_map, proximity=loss_span_proximity
         )
