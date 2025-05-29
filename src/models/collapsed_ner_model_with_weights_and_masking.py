@@ -1,4 +1,7 @@
+from typing import Any
+
 import torch
+from torch import Tensor
 import torch.nn as nn
 
 
@@ -31,12 +34,24 @@ class CollapsedNERModel(nn.Module):
 
     def forward(
         self,
-        input_ids: torch.Tensor,
-        attention_mask: torch.Tensor | None = None,
-        labels: torch.Tensor | None = None,
-        loss_mask: torch.Tensor | None = None,
-        **kwargs
-    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        input_ids: Tensor,
+        attention_mask: Tensor | None = None,
+        labels: Tensor | None = None,
+        loss_mask: Tensor | None = None,
+        **kwargs: Any
+    ) -> tuple[Tensor, Tensor]:
+        """Forward pass with collapsed NER logits and optional loss calculation.
+
+        Args:
+            input_ids: Input token IDs
+            attention_mask: Attention mask
+            labels: Ground truth labels (optional)
+            loss_mask: Optional mask for loss calculation
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            Tuple of (loss, logits) tensors. If labels are not provided, loss will be zero.
+        """
         outputs = self.base_model(
             input_ids=input_ids, attention_mask=attention_mask, **kwargs
         )

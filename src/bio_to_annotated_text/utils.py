@@ -12,11 +12,11 @@ project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from src.utils.logger import setup_logger
-from typing import cast
 
-# Set up logger with explicit type annotation
-logger = cast(logging.Logger, setup_logger(__name__))
+from src.utils.logger import setup_logger
+
+# Set up logger
+logger: logging.Logger = setup_logger(__name__)
 
 from src.helpers.label_map import label_map
 
@@ -58,7 +58,7 @@ def load_tokenizer() -> tuple[BertTokenizerFast, set[str]]:
     return tokenizer, set(tokenizer.all_special_tokens)
 
 
-from typing import Any
+from typing import Any, TextIO
 
 
 def process_line(
@@ -162,9 +162,6 @@ def annotate_word_tokens(word_tokens: list[WordTokens]) -> str:
         annotated_parts.append("</span>")
 
     return " ".join(annotated_parts).replace(" </span>", "</span>")
-
-
-from typing import TextIO
 
 
 def write_output(

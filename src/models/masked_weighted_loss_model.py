@@ -24,7 +24,7 @@ class MaskedWeightedLossModel(nn.Module):
         self.loss_fn = nn.CrossEntropyLoss(weight=weights_tensor, reduction="none")
 
     def calculate_weighted_loss(self, logits: Tensor, labels: Tensor) -> Tensor:
-        return self.loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
+        return self.loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))  # type: ignore[no-any-return]
 
     def forward(
         self,
@@ -34,6 +34,18 @@ class MaskedWeightedLossModel(nn.Module):
         loss_mask: Tensor | None = None,
         **kwargs: dict[str, Any]
     ) -> tuple[Tensor, Tensor]:
+        """Forward pass with masking and weighted loss calculation.
+
+        Args:
+            input_ids: Input token IDs
+            attention_mask: Attention mask
+            labels: Ground truth labels
+            loss_mask: Optional mask for loss calculation
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            Tuple of (loss, logits) tensors
+        """
         outputs = self.base_model(input_ids=input_ids, attention_mask=attention_mask)
         logits = self.dropout(outputs.logits)
 
