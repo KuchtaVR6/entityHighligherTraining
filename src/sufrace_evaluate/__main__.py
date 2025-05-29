@@ -11,14 +11,14 @@ project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from src.utils.logger import setup_logger
+from transformers import PreTrainedModel
+
+from src.helpers.logging_utils import setup_logger
 
 # Set up logger
-logger = setup_logger(__name__)
+logger = setup_logger()
 from tqdm import tqdm
-from transformers import (
-    DataCollatorForTokenClassification,
-)
+from transformers import DataCollatorForTokenClassification
 
 from src.configs.path_config import eval_data_path
 from src.helpers.label_map import label_map
@@ -31,10 +31,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def compute_accuracy(model, val_dataloader, label_map):
+def compute_accuracy(
+    model: PreTrainedModel, val_dataloader: DataLoader, label_map: dict[str, int]
+) -> dict[str, float]:
     model.eval()
-    correct_counts = defaultdict(int)
-    total_counts = defaultdict(int)
+    correct_counts: dict[int, int] = defaultdict(int)
+    total_counts: dict[int, int] = defaultdict(int)
     id_to_label = {v: k for k, v in label_map.items()}
 
     for batch in tqdm(val_dataloader, desc="Evaluating"):
@@ -81,7 +83,7 @@ if __name__ == "__main__":
     logger.info("Loading datasets...")
     val_dataset = load_large_dataset(eval_data_path)
 
-    tokenizer, model = load_model_and_tokenizer([0, 0, 0])
+    model, tokenizer = load_model_and_tokenizer([0, 0, 0])
 
     val_dataset = val_dataset.map(
         lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map),

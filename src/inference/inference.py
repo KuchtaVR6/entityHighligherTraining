@@ -1,111 +1,130 @@
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 import sys
+from typing import Any
 
 import torch
 from tqdm import tqdm
+from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
 # Add project root to path
 project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from src.utils.logger import setup_logger
-
-# Set up logger
-logger = setup_logger(__name__)
-
 from src.configs.path_config import eval_data_path
 from src.helpers.label_map import label_map
 from src.helpers.load_helpers import load_large_dataset, tokenize_text
 from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer
+from src.utils.logger import setup_logger
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+# Set up logger
+logger: logging.Logger = setup_logger(__name__)
 
 
-def detokenize(tokens):
-    """Convert tokenized output back to readable text."""
-    words = []
+def detokenize(tokens: list[str]) -> str:
+    """Convert tokenized output back to readable text.
+
+    Args:
+        tokens: List of tokens to detokenize
+
+    Returns:
+        str: Detokenized text
+    """
+    words: list[str] = []
     for token in tokens:
-        if token == "[CLS]" or token == "[SEP]" or token == "[PAD]":
+        if token in {"[CLS]", "[SEP]", "[PAD]"}:
             continue  # Ignore special tokens
         if token.startswith("##"):
-            words[-1] += token[2:]  # Merge subword tokens
+            if words:  # Ensure there's at least one word to append to
+                words[-1] += token[2:]  # Merge subword tokens
         else:
             words.append(token)
     return " ".join(words)
 
 
-def infer(model, infer_dataset, label_map):
+def infer(
+    model: PreTrainedModel,
+    infer_dataset: Any,  # Could be more specific with Dataset type
+    label_map: dict[str, int],
+    tokenizer: PreTrainedTokenizerBase,
+) -> None:
+    """Run inference on the given dataset using the provided model.
+
+    Args:
+        model: The pre-trained model to use for inference
+        infer_dataset: Dataset to run inference on
+        label_map: Mapping from label names to indices
+        tokenizer: Tokenizer used for the model
+    """
     model.eval()
+    reverse_label_map = {v: k for k, v in label_map.items()}
 
     for batch in tqdm(infer_dataset):
         input_ids = torch.tensor(batch["input_ids"]).unsqueeze(0)
         attention_mask = torch.tensor(batch["attention_mask"]).unsqueeze(0)
 
-        labels = batch["labels"]
-        tensor_labels = torch.tensor(labels).unsqueeze(0)
-        zero_tensor = torch.zeros_like(tensor_labels)
-
-        tokens = tokenizer.convert_ids_to_tokens(input_ids.squeeze().tolist())
-
-        # Use the original text from the dataset if available
-        original_text = batch["text"] if "text" in batch else None
+        zero_tensor = torch.zeros_like(input_ids)
 
         with torch.no_grad():
-            _, logits = model(
+            outputs = model(
                 input_ids=input_ids, attention_mask=attention_mask, labels=zero_tensor
             )
+            logits = outputs.logits if hasattr(outputs, "logits") else outputs[0]
             predictions = torch.argmax(logits, dim=-1).squeeze().tolist()
 
-            # Decode the input IDs into tokens
+            # Get predicted labels using the reverse label map
+            predicted_labels = [reverse_label_map.get(idx, "O") for idx in predictions]
+
+            # Get tokens from tokenizer
             tokens = tokenizer.convert_ids_to_tokens(input_ids.squeeze().tolist())
 
-            # Get predicted labels
-            predicted_labels = [
-                key
-                for idx in predictions
-                for key, val in label_map.items()
-                if val == idx
-            ]
-
             # Prepare XML output for highlighting spans
-            highlighted_text = []
+            highlighted_text: list[str] = []
+            current_entity: str | None = None
+            current_entity_tokens: list[str] = []
 
-            if original_text:
-                # Use the original text as a base for displaying
-                start_idx = 0
-                for token, label in zip(tokens, predicted_labels, strict=False):
-                    if label != "O":  # Only highlight non-'O' labels
-                        # Find the corresponding word in the original text
-                        word = original_text[
-                            start_idx : start_idx + len(token)
-                        ].replace("##", "")
-                        # Wrap the span with an XML tag
-                        highlighted_text.append(f"<span class='{label}'>{word}</span>")
-                        start_idx += len(word)
-                    else:
-                        # If 'O', just append the token without change
-                        word = original_text[
-                            start_idx : start_idx + len(token)
-                        ].replace("##", "")
-                        highlighted_text.append(word)
-                        start_idx += len(word)
-            else:
-                # If no original text, fall back to just displaying tokens with their BIO labels
-                annotated_output = []
-                for token, label in zip(tokens, predicted_labels, strict=False):
-                    if label != "O":
-                        annotated_output.append(f"<span class='{label}'>{token}</span>")
-                    else:
-                        annotated_output.append(token)
+            for token, label in zip(tokens, predicted_labels, strict=False):
+                if token in {"[CLS]", "[SEP]", "[PAD]"}:
+                    continue
 
-                highlighted_text = annotated_output
+                if label.startswith("B-"):
+                    if current_entity is not None and current_entity_tokens:
+                        # Close previous entity
+                        entity_text = tokenizer.convert_tokens_to_string(
+                            current_entity_tokens
+                        )
+                        highlighted_text.append(
+                            f"<span class='{current_entity}'>{entity_text}</span>"
+                        )
+                        current_entity_tokens = []
+                    current_entity = label[2:]  # Remove 'B-' prefix
+                    current_entity_tokens.append(token)
+                elif label.startswith("I-") and current_entity == label[2:]:
+                    current_entity_tokens.append(token)
+                else:
+                    if current_entity_tokens:
+                        # Close any open entity
+                        entity_text = tokenizer.convert_tokens_to_string(
+                            current_entity_tokens
+                        )
+                        highlighted_text.append(
+                            f"<span class='{current_entity}'>{entity_text}</span>"
+                        )
+                        current_entity_tokens = []
+                        current_entity = None
+                    highlighted_text.append(token)
 
-            # Join all parts into a single string for output
+            # Add any remaining entity
+            if current_entity_tokens and current_entity:
+                entity_text = tokenizer.convert_tokens_to_string(current_entity_tokens)
+                highlighted_text.append(
+                    f"<span class='{current_entity}'>{entity_text}</span>"
+                )
+
+            # Log the highlighted text
             logger.info(" ".join(highlighted_text))
 
 
@@ -113,13 +132,19 @@ if __name__ == "__main__":
     logger.info("Loading datasets...")
     val_dataset = load_large_dataset(eval_data_path)
 
-    model, tokenizer = load_model_and_tokenizer([0, 0, 0])
+    # Load model and tokenizer
+    model, tokenizer = load_model_and_tokenizer()
 
-    val_dataset = val_dataset.map(
-        lambda x: tokenize_text(x, tokenizer, label_map),
+    if model is None or tokenizer is None:
+        logger.error("Failed to load model or tokenizer")
+        sys.exit(1)
+
+    # Tokenize the dataset
+    tokenized_dataset = val_dataset.map(
+        lambda x: tokenize_text(x, tokenizer),
         batched=True,
         remove_columns=["text"],
     )
 
-    result = infer(model, val_dataset, label_map)
-    logger.info(f"Inference result: {result}")
+    # Run inference
+    infer(model, tokenized_dataset, label_map, tokenizer)
