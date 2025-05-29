@@ -1,6 +1,7 @@
 import torch
 from tqdm import tqdm
 
+
 def compute_logits(model, infer_dataset, tokenizer, max_examples=None):
     model.eval()
     results = []
@@ -18,17 +19,12 @@ def compute_logits(model, infer_dataset, tokenizer, max_examples=None):
 
         with torch.no_grad():
             _, logits = model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                labels=zero_tensor
+                input_ids=input_ids, attention_mask=attention_mask, labels=zero_tensor
             )
             logits = logits.cpu().detach()
 
-        for idx, (token_seq, logit_seq) in enumerate(zip(tokens, logits)):
-            entry = {
-                "tokens": token_seq,
-                "logits": logit_seq.tolist()
-            }
+        for idx, (token_seq, logit_seq) in enumerate(zip(tokens, logits, strict=False)):
+            entry = {"tokens": token_seq, "logits": logit_seq.tolist()}
             if labels is not None:
                 entry["labels"] = labels[idx].cpu().tolist()
             results.append(entry)

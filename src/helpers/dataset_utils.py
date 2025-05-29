@@ -1,10 +1,11 @@
-import random
-import os
 import json
-from collections import Counter
-from datasets import Dataset
-from typing import List
+import os
+import random
 import time
+from collections import Counter
+
+from datasets import Dataset
+
 from src.helpers.logging_utils import setup_logger
 
 logger = setup_logger()
@@ -13,12 +14,13 @@ logger = setup_logger()
 CACHE_DIR = os.path.expanduser("~/.cache/entity_highlighter")
 os.makedirs(CACHE_DIR, exist_ok=True)
 
+
 def calc_distribution(
     train_dataset: Dataset,
     consider_mask: bool = False,
     max_samples: int = 10000,
-    use_cache: bool = True
-) -> List[float]:
+    use_cache: bool = True,
+) -> list[float]:
     """
     Calculate class distribution for token classification with efficient sampling.
 
@@ -41,7 +43,7 @@ def calc_distribution(
     # Try to load from cache if enabled
     if use_cache and os.path.exists(cache_path):
         try:
-            with open(cache_path, 'r') as f:
+            with open(cache_path) as f:
                 cached_dist = json.load(f)
                 return cached_dist
         except Exception:
@@ -75,7 +77,7 @@ def calc_distribution(
                 loss_mask = example["loss_mask"]
 
                 # Only count tokens within the proximity window
-                for label, mask in zip(labels, loss_mask):
+                for label, mask in zip(labels, loss_mask, strict=False):
                     if mask == 1:
                         tag_counter[label] += 1
     else:
@@ -97,14 +99,14 @@ def calc_distribution(
     # Prevent division by zero
     if total == 0:
         logger.warning("No tokens counted! Using equal distribution.")
-        distribution = [1/3, 1/3, 1/3]  # Equal weights if no data
+        distribution = [1 / 3, 1 / 3, 1 / 3]  # Equal weights if no data
     else:
         distribution = [tag_counter[tag] / total for tag in sorted(tag_counter)]
 
     # Cache result for future use
     if use_cache:
         try:
-            with open(cache_path, 'w') as f:
+            with open(cache_path, "w") as f:
                 json.dump(distribution, f)
         except Exception:
             pass

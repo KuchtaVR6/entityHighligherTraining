@@ -1,24 +1,28 @@
 import re
-from datasets import load_dataset, Dataset
+
+from datasets import Dataset, load_dataset
+
 
 def remove_span_tags(text):
-    return re.sub(r'<\/?.*?span.*?>', '', text)
+    return re.sub(r"<\/?.*?span.*?>", "", text)
+
 
 def transform_to_bio(annotated):
     tags, current_tag = [], None
-    text_with_tags = re.split(r'(<[^>]+>)', annotated)
+    text_with_tags = re.split(r"(<[^>]+>)", annotated)
 
     for token in text_with_tags:
-        if re.match(r'<[^/]+>', token):
-            current_tag = token.strip('<>')
-        elif re.match(r'</[^>]+>', token):
+        if re.match(r"<[^/]+>", token):
+            current_tag = token.strip("<>")
+        elif re.match(r"</[^>]+>", token):
             current_tag = None
         elif token.strip():
             words = token.split()
             for i, word in enumerate(words):
-                tag_prefix = 'B' if i == 0 else 'I'
-                tags.append(f'{tag_prefix}-EMPH' if current_tag else 'O')
+                tag_prefix = "B" if i == 0 else "I"
+                tags.append(f"{tag_prefix}-EMPH" if current_tag else "O")
     return tags
+
 
 def tokenize_and_align_labels_batch(examples, tokenizer, label_map, proximity=None):
     """Processes raw text, extracts BIO tags, tokenizes, aligns labels, and computes loss mask."""
@@ -31,7 +35,7 @@ def tokenize_and_align_labels_batch(examples, tokenizer, label_map, proximity=No
         padding=True,
         max_length=256,
         is_split_into_words=False,
-        return_tensors="pt"  # to simplify mask ops
+        return_tensors="pt",  # to simplify mask ops
     )
 
     labels = []
@@ -61,7 +65,9 @@ def tokenize_and_align_labels_batch(examples, tokenizer, label_map, proximity=No
             # Compute loss mask
             mask = [0] * len(seq_labels)
             for pos in important_positions:
-                for i in range(max(0, pos - proximity), min(len(mask), pos + proximity + 1)):
+                for i in range(
+                    max(0, pos - proximity), min(len(mask), pos + proximity + 1)
+                ):
                     mask[i] = 1
 
             loss_masks.append(mask)
@@ -72,8 +78,9 @@ def tokenize_and_align_labels_batch(examples, tokenizer, label_map, proximity=No
         "input_ids": tokenized_inputs["input_ids"],
         "attention_mask": tokenized_inputs["attention_mask"],
         "labels": labels,
-        "loss_mask": loss_masks
+        "loss_mask": loss_masks,
     }
+
 
 def tokenize_text(texts, tokenizer):
     """Tokenizes raw texts (no labels, no XML tags) for inference."""
@@ -85,11 +92,13 @@ def tokenize_text(texts, tokenizer):
         truncation=True,
         padding=True,
         max_length=256,
-        is_split_into_words=False
+        is_split_into_words=False,
     )
 
     return tokenized_inputs
 
 
 def load_large_dataset(file_path) -> Dataset:
-    return load_dataset('json', data_files=str(file_path), split='train', streaming=False)
+    return load_dataset(
+        "json", data_files=str(file_path), split="train", streaming=False
+    )

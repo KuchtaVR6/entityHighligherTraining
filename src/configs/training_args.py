@@ -7,6 +7,7 @@ model_name = "masked_ner_bert"
 loss_span_proximity = 6
 inference_batch_size = 16
 
+
 def get_training_args():
     return TrainingArguments(
         output_dir=checkpoints_path,
@@ -21,5 +22,5 @@ def get_training_args():
         evaluation_strategy="epoch",
         save_steps=10000,
         save_total_limit=2,
-        remove_unused_columns=False
+        remove_unused_columns=False,
     )

@@ -1,16 +1,16 @@
 import os
 
 import torch
+from transformers import AutoModelForTokenClassification, AutoTokenizer
+
 from src.configs.path_config import save_model_path
-from transformers import AutoTokenizer, AutoModelForTokenClassification
-
-from src.helpers.logging_utils import setup_logger
 from src.configs.training_args import model_name
-
-from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
+from src.helpers.logging_utils import setup_logger
 from src.models.collapsed_ner_model_with_weights_and_masking import CollapsedNERModel
+from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
 
 logger = setup_logger()
+
 
 def get_device():
     if torch.backends.mps.is_available():
@@ -19,18 +19,20 @@ def get_device():
         return "cuda"
     return "cpu"
 
+
 model_name_to_params = {
     "masked_bert": {
         "name": "bert-base-uncased",
         "instance": MaskedWeightedLossModel,
-        "extra_params": {"num_labels": 3}
+        "extra_params": {"num_labels": 3},
     },
     "masked_ner_bert": {
         "name": "dslim/distilbert-NER",
         "instance": CollapsedNERModel,
-        "extra_params": {}  # Add this to keep consistent
-    }
+        "extra_params": {},  # Add this to keep consistent
+    },
 }
+
 
 def get_tokenizer_only():
     """Get only the tokenizer without loading the model."""
@@ -43,6 +45,7 @@ def get_tokenizer_only():
 
     return tokenizer
 
+
 def load_model_and_tokenizer(model_params):
     """Load both model and tokenizer with the specified class weights."""
     selected_information = model_name_to_params[model_name]
@@ -52,8 +55,7 @@ def load_model_and_tokenizer(model_params):
 
     # Load the base model
     base_model = AutoModelForTokenClassification.from_pretrained(
-        selected_information["name"],
-        **selected_information.get("extra_params", {})
+        selected_information["name"], **selected_information.get("extra_params", {})
     )
 
     # Create class weights tensor and instantiate the model
