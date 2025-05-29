@@ -27,19 +27,13 @@ def predict_label(
 
         if summative_prediction and prev_label == 0 and idx == 0:
             logits[1] += logits[2]
-
         if idx != 0:
-            logits[1] = logits[
-                2
-            ]  # Enforce transition logic: inner tokens treated differently
-
+            logits[1] = logits[2]
         prod *= logits
 
     pred = int(np.argmax(prod))
-
     if pred == 2 and prev_label == 0:
         pred = 0
-
     return pred
 
 
@@ -101,11 +95,9 @@ def update_metrics(
     true = wt.tokens[0].label
     correct = int(pred == true)
 
-    # Local update
     c, t = local_stats.get(true, (0, 0))
     local_stats[true] = (c + correct, t + 1)
 
-    # Global update
     c_g, t_g = global_stats.get(true, (0, 0))
     global_stats[true] = (c_g + correct, t_g + 1)
 
@@ -159,9 +151,12 @@ def write_output(
     total: int,
 ) -> None:
     annotated = annotate_word_tokens(record_tokens)
-    label_metrics = dict(compute_metrics(local_stats))
-    # Add overall metrics with proper type handling
-    label_metrics["overall"] = (correct, total, correct / total if total > 0 else 0.0)  # type: ignore
+    # Get the metrics and create a new dict with the correct type
+    computed_metrics = compute_metrics(local_stats)
+    label_metrics: dict[int | str, tuple[int, int, float]] = {
+        **dict(computed_metrics.items()),
+        "overall": (correct, total, correct / total if total > 0 else 0.0),
+    }
 
     out_obj = {"annotated_text": annotated, "metrics": label_metrics}
     f_out.write(json.dumps(out_obj) + "\n")
@@ -170,13 +165,6 @@ def write_output(
 def print_global_metrics(
     global_stats: dict[int, tuple[int, int]], overall_correct: int, overall_total: int
 ) -> None:
-    """Log global metrics for model evaluation.
-
-    Args:
-        global_stats: Dictionary mapping label to (correct, total) counts
-        overall_correct: Total number of correct predictions
-        overall_total: Total number of predictions
-    """
     logger.info("===")
     for label, (c, t) in sorted(global_stats.items()):
         logger.info(f"Label {label}: {c / t:.2%} ({c}/{t})")

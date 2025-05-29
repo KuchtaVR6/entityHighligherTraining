@@ -29,7 +29,6 @@ if __name__ == "__main__":
     logger.info("Loading datasets...")
     val_dataset = load_large_dataset(eval_data_path)
 
-    # Save the text column for later use
     text_column = val_dataset["text"]
 
     tokenizer = AutoTokenizer.from_pretrained(save_model_path.parent)
@@ -48,7 +47,6 @@ if __name__ == "__main__":
             x, tokenizer, label_map, proximity=loss_span_proximity
         )
 
-    # Map data and remove the text column
     val_dataset = val_dataset.map(mapped_data, batched=True, remove_columns=["text"])
 
     data_collator = DataCollatorForTokenClassification(tokenizer)
