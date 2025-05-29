@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Track failures
 FAILURE=0
 
 echo "🚀 Running full lint & type-check pipeline..."
@@ -15,7 +14,7 @@ else
 fi
 
 # Lint check with Ruff
-echo "🔎 Checking code with Ruff..."
+echo "🔎 Checking code with Ruff (including import sorting)..."
 if ruff check src; then
   echo "✅ Ruff check passed!"
 else
@@ -23,10 +22,10 @@ else
   FAILURE=1
 fi
 
-# Auto-fix with Ruff
-echo "🧼 Auto-fixing with Ruff..."
+# Auto-fix with Ruff (including import sorting)
+echo "🧼 Auto-fixing with Ruff (includes import sorting)..."
 if ruff check src --fix; then
-  echo "✅ Ruff auto-fix completed!"
+  echo "✅ Ruff auto-fix completed (imports sorted)!"
 else
   echo "❌ Ruff auto-fix encountered issues!"
   FAILURE=1
@@ -47,3 +46,5 @@ if [ $FAILURE -eq 0 ]; then
   exit 0
 else
   echo "🚨 Some checks failed. Please review the output."
+  exit 1
+fi

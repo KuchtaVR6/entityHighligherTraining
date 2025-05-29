@@ -4,6 +4,11 @@ target-version = "py311"
 extend-select = ["I", "UP", "F", "B", "C4", "T20", "SIM", "Q"]
 ignore = ["E501", "D100", "D101"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["your_project_name"]
+combine-as-imports = true
+force-sort-within-sections = true
+
 [tool.ruff.format]
 quote-style = "double"
 
