@@ -40,11 +40,11 @@ def compute_accuracy(
     id_to_label = {v: k for k, v in label_map.items()}
 
     for batch in tqdm(val_dataloader, desc="Evaluating"):
-        input_ids = torch.tensor(batch["input_ids"]).to(model.base_model.device)
-        attention_mask = torch.tensor(batch["attention_mask"]).to(
-            model.base_model.device
+        input_ids = batch["input_ids"].clone().detach().to(model.base_model.device)
+        attention_mask = (
+            batch["attention_mask"].clone().detach().to(model.base_model.device)
         )
-        labels = torch.tensor(batch["labels"]).to(model.base_model.device)
+        labels = batch["labels"].clone().detach().to(model.base_model.device)
 
         zero_tensor = torch.zeros_like(labels)
 

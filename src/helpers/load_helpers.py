@@ -82,12 +82,16 @@ def tokenize_and_align_labels_batch(
 
         labels.append(seq_labels)
 
-    return {
+    result = {
         "input_ids": tokenized_inputs["input_ids"],
         "attention_mask": tokenized_inputs["attention_mask"],
         "labels": labels,
-        "loss_mask": loss_masks,
     }
+
+    if proximity is not None:
+        result["loss_mask"] = loss_masks
+
+    return result
 
 
 def tokenize_text(
