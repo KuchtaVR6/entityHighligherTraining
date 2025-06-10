@@ -24,7 +24,7 @@ if __name__ == '__main__':
     text_column = val_dataset['text']
 
     tokenizer = AutoTokenizer.from_pretrained(save_model_path.parent)
-    base_model = AutoModelForTokenClassification.from_pretrained("dslim/distilbert-NER", num_labels=3)
+    base_model = AutoModelForTokenClassification.from_pretrained("dslim/distilbert-NER")
     class_weights = torch.tensor([0, 0, 0], dtype=torch.float)
 
     model = CollapsedNERModel(base_model, class_weights)
