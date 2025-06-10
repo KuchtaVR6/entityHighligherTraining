@@ -16,16 +16,21 @@ class CollapsedNERModel(nn.Module):
         self.b_ids = [1, 3, 5, 7]
         self.i_ids = [2, 4, 6, 8]
 
-        weights_tensor = (
-            class_weights
-            if isinstance(class_weights, torch.Tensor)
-            else torch.tensor(class_weights, dtype=torch.float)
+        # Register as buffer to ensure proper device handling
+        self.register_buffer(
+            "class_weights",
+            (
+                class_weights
+                if isinstance(class_weights, torch.Tensor)
+                else torch.tensor(class_weights, dtype=torch.float)
+            ),
         )
-        self.loss_fn = nn.CrossEntropyLoss(weight=weights_tensor, reduction="none")
+        self.loss_fn = nn.CrossEntropyLoss(reduction="none")
 
     def collapse_logits(self, logits: torch.Tensor) -> torch.Tensor:
-        collapsed_logits = torch.zeros(logits.size(0), logits.size(1), 3).to(
-            logits.device
+        device = logits.device
+        collapsed_logits = torch.zeros(
+            logits.size(0), logits.size(1), 3, device=device, dtype=logits.dtype
         )
         collapsed_logits[..., 0] = logits[..., self.o_id]  # O
         collapsed_logits[..., 1] = logits[..., self.b_ids].mean(dim=-1)  # B
@@ -40,18 +45,18 @@ class CollapsedNERModel(nn.Module):
         loss_mask: Tensor | None = None,
         **kwargs: Any
     ) -> tuple[Tensor, Tensor] | Tensor:
-        """Forward pass with collapsed NER logits and optional loss calculation.
+        # Ensure all inputs are on the same device as the model
+        device = next(self.parameters()).device
+        input_ids = input_ids.to(device)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(device)
 
-        Args:
-            input_ids: Input token IDs
-            attention_mask: Attention mask
-            labels: Ground truth labels (optional)
-            loss_mask: Optional mask for loss calculation
-            **kwargs: Additional keyword arguments
+        # Move any tensor kwargs to the correct device
+        kwargs = {
+            k: v.to(device) if hasattr(v, "to") and callable(v.to) else v
+            for k, v in kwargs.items()
+        }
 
-        Returns:
-            Tuple of (loss, logits) tensors. If labels are not provided, loss will be zero.
-        """
         outputs = self.base_model(
             input_ids=input_ids, attention_mask=attention_mask, **kwargs
         )
@@ -59,10 +64,11 @@ class CollapsedNERModel(nn.Module):
         collapsed_logits = self.collapse_logits(outputs.logits)
 
         if labels is not None:
+            labels = labels.to(device)
             loss = self.loss_fn(collapsed_logits.view(-1, 3), labels.view(-1))
 
             if loss_mask is not None:
-                loss = (loss * loss_mask.view(-1)).mean()
+                loss = (loss * loss_mask.view(-1).to(device)).mean()
             else:
                 loss = loss.mean()
 

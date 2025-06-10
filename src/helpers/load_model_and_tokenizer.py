@@ -64,6 +64,7 @@ def load_model_and_tokenizer(
 ) -> tuple[ModelType, PreTrainedTokenizerFast]:
     """Load both model and tokenizer with the specified class weights."""
     selected_information = model_name_to_params[model_name]
+    device = get_device()
 
     # Reuse the tokenizer function
     tokenizer = get_tokenizer_only()
@@ -74,15 +75,19 @@ def load_model_and_tokenizer(
     )
 
     # Create class weights tensor and instantiate the model
-    class_weights = torch.tensor(model_params, dtype=torch.float)
+    class_weights = torch.tensor(model_params, dtype=torch.float).to(device)
     model_class = selected_information["instance"]
+
+    # Initialize model and move to device
     model = model_class(base_model, class_weights)
-    model.to(get_device())
+    model = model.to(device)
+    model.eval()  # Set to evaluation mode
 
     # Load trained weights if available
     if os.path.exists(save_model_path):
         logger.info("Using a trained model...")
-        model.load_state_dict(torch.load(save_model_path))
+        state_dict = torch.load(save_model_path, map_location=torch.device(device))
+        model.load_state_dict(state_dict)
     else:
         logger.info("Using a pretrained base model...")
 

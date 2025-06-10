@@ -16,15 +16,22 @@ class MaskedWeightedLossModel(nn.Module):
         super().__init__()
         self.base_model = base_model
         self.dropout = nn.Dropout(p=dropout_prob)
-        weights_tensor = (
-            class_weights
-            if isinstance(class_weights, torch.Tensor)
-            else torch.tensor(class_weights, dtype=torch.float)
+
+        self.register_buffer(
+            "class_weights",
+            (
+                class_weights
+                if isinstance(class_weights, torch.Tensor)
+                else torch.tensor(class_weights, dtype=torch.float)
+            ),
         )
-        self.loss_fn = nn.CrossEntropyLoss(weight=weights_tensor, reduction="none")
+        self.loss_fn = nn.CrossEntropyLoss(reduction="none")
 
     def calculate_weighted_loss(self, logits: Tensor, labels: Tensor) -> Tensor:
-        return self.loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))  # type: ignore[no-any-return]
+        loss: Tensor = self.loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
+        weights: Tensor = self.class_weights[labels.view(-1)]
+        result: Tensor = loss * weights
+        return result
 
     def forward(
         self,
@@ -34,26 +41,29 @@ class MaskedWeightedLossModel(nn.Module):
         loss_mask: Tensor | None = None,
         **kwargs: dict[str, Any]
     ) -> tuple[Tensor, Tensor]:
-        """Forward pass with masking and weighted loss calculation.
-
-        Args:
-            input_ids: Input token IDs
-            attention_mask: Attention mask
-            labels: Ground truth labels
-            loss_mask: Optional mask for loss calculation
-            **kwargs: Additional keyword arguments
-
-        Returns:
-            Tuple of (loss, logits) tensors
-        """
-        outputs = self.base_model(input_ids=input_ids, attention_mask=attention_mask)
-        logits = self.dropout(outputs.logits)
+        device = next(self.parameters()).device
+        input_ids = input_ids.to(device)
+        attention_mask = attention_mask.to(device)
+        labels = labels.to(device)
 
         if loss_mask is not None:
-            masked_loss = (
-                loss_mask.view(-1) * self.calculate_weighted_loss(logits, labels)
-            ).mean()
-        else:
-            masked_loss = self.calculate_weighted_loss(logits, labels).mean()
+            loss_mask = loss_mask.to(device)
 
-        return masked_loss, logits
+        outputs = self.base_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            **{
+                k: (v.to(device) if hasattr(v, "to") and callable(v.to) else v)
+                for k, v in kwargs.items()
+            }
+        )
+
+        logits = self.dropout(outputs.logits)
+        loss = self.calculate_weighted_loss(logits, labels)
+
+        if loss_mask is not None:
+            loss = (loss_mask.view(-1) * loss).mean()
+        else:
+            loss = loss.mean()
+
+        return loss, logits

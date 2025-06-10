@@ -4,12 +4,10 @@ import logging
 import torch
 from torch.utils.data import DataLoader
 from transformers import (
-    AutoModelForTokenClassification,
-    AutoTokenizer,
     DataCollatorForTokenClassification,
 )
 
-from src.configs.path_config import eval_data_path, save_model_path
+from src.configs.path_config import eval_data_path
 from src.configs.training_args import inference_batch_size, loss_span_proximity
 from src.helpers.label_map import label_map
 from src.helpers.load_helpers import (
@@ -17,8 +15,8 @@ from src.helpers.load_helpers import (
     remove_span_tags,
     tokenize_and_align_labels_batch,
 )
+from src.helpers.load_model_and_tokenizer import load_model_and_tokenizer
 from src.inference.compute_logits import compute_logits
-from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -31,14 +29,8 @@ if __name__ == "__main__":
 
     text_column = val_dataset["text"]
 
-    tokenizer = AutoTokenizer.from_pretrained(save_model_path.parent)
-    base_model = AutoModelForTokenClassification.from_pretrained(
-        "bert-base-uncased", num_labels=3
-    )
-    class_weights = torch.tensor([0, 0, 0], dtype=torch.float)
-
-    model = MaskedWeightedLossModel(base_model, class_weights)
-    model.load_state_dict(torch.load(save_model_path))
+    # Load model and tokenizer with zero weights since we're just doing inference
+    model, tokenizer = load_model_and_tokenizer(model_params=[0, 0, 0])
 
     def mapped_data(
         x: dict[str, list[str]],
