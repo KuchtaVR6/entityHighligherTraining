@@ -8,6 +8,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, DataCol
 from src.configs.training_args import loss_span_proximity, inference_batch_size
 from src.inference.compute_logits import compute_logits
 from src.helpers.load_helpers import load_large_dataset, tokenize_and_align_labels_batch, remove_span_tags
+from src.models.collapsed_ner_model_with_weights_and_masking import CollapsedNERModel
 from src.models.masked_weighted_loss_model import MaskedWeightedLossModel
 from src.helpers.label_map import label_map
 from src.configs.path_config import eval_data_path, save_model_path
@@ -23,10 +24,10 @@ if __name__ == '__main__':
     text_column = val_dataset['text']
 
     tokenizer = AutoTokenizer.from_pretrained(save_model_path.parent)
-    base_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=3)
+    base_model = AutoModelForTokenClassification.from_pretrained("dslim/distilbert-NER", num_labels=3)
     class_weights = torch.tensor([0, 0, 0], dtype=torch.float)
 
-    model = MaskedWeightedLossModel(base_model, class_weights)
+    model = CollapsedNERModel(base_model, class_weights)
     model.load_state_dict(torch.load(save_model_path))
 
     mapped_data = lambda x: tokenize_and_align_labels_batch(x, tokenizer, label_map, proximity=loss_span_proximity)
